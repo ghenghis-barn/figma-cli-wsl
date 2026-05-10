@@ -415,6 +415,10 @@ export class FigmaClient {
             const textAlign = item.align || 'left';
             const textAlignVal = textAlign === 'center' ? 'CENTER' : textAlign === 'right' ? 'RIGHT' : 'LEFT';
             const textFillCode = this.generateFillCode(color, `el${idx}`);
+            // Auto-FILL text in column layouts so Safe Mode wraps text correctly.
+            // Without this, text inside fixed-width col-flex parents overflows in plugin sandbox.
+            const isCol = parentFlex === 'col' || parentFlex === 'column';
+            const autoFill = isCol && !fillWidth;
             return `
           const el${idx} = figma.createText();
           el${idx}.fontName = {family:'Inter',style:'${style}'};
@@ -423,7 +427,11 @@ export class FigmaClient {
           ${textFillCode.code}
           el${idx}.textAlignHorizontal = '${textAlignVal}';
           ${parentVar}.appendChild(el${idx});
-          ${fillWidth ? `el${idx}.layoutSizingHorizontal = 'FILL';` : ''}`;
+          ${fillWidth ? `el${idx}.layoutSizingHorizontal = 'FILL';` : ''}
+          ${autoFill ? `// Auto-FILL: text in col layout needs FILL for Safe Mode wrapping
+          if (${parentVar}.layoutMode === 'VERTICAL' && (${parentVar}.counterAxisSizingMode === 'FIXED' || ${parentVar}.primaryAxisSizingMode === 'FIXED')) {
+            try { el${idx}.layoutSizingHorizontal = 'FILL'; el${idx}.textAutoResize = 'HEIGHT'; } catch(e) {}
+          }` : ''}`;
           } else if (item._type === 'frame') {
             const fName = item.name || 'Frame';
             const fillW = item.w === 'fill';
@@ -917,6 +925,9 @@ export class FigmaClient {
           const fillWidth = item.w === 'fill';
           const textFillCode = this.generateFillCode(color, `el${idx}`);
 
+          // Auto-FILL text in column layouts so Safe Mode wraps text correctly.
+          const isCol = parentFlex === 'col' || parentFlex === 'column';
+          const autoFill = isCol && !fillWidth;
           return `
         __currentNode = 'Text: ${item.content.substring(0, 30).replace(/'/g, "\\'")}';
         const el${idx} = figma.createText();
@@ -925,7 +936,11 @@ export class FigmaClient {
         el${idx}.characters = ${JSON.stringify(item.content)};
         ${textFillCode.code}
         ${parentVar}.appendChild(el${idx});
-        ${fillWidth ? `el${idx}.layoutSizingHorizontal = 'FILL'; el${idx}.textAutoResize = 'HEIGHT';` : ''}`;
+        ${fillWidth ? `el${idx}.layoutSizingHorizontal = 'FILL'; el${idx}.textAutoResize = 'HEIGHT';` : ''}
+        ${autoFill ? `// Auto-FILL: text in col layout needs FILL for Safe Mode wrapping
+        if (${parentVar}.layoutMode === 'VERTICAL' && (${parentVar}.counterAxisSizingMode === 'FIXED' || ${parentVar}.primaryAxisSizingMode === 'FIXED')) {
+          try { el${idx}.layoutSizingHorizontal = 'FILL'; el${idx}.textAutoResize = 'HEIGHT'; } catch(e) {}
+        }` : ''}`;
         } else if (item._type === 'frame') {
           // Nested frame (button, etc.)
           const fName = item.name || 'Nested Frame';
