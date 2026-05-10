@@ -4673,27 +4673,33 @@ set
 set
   .command('autolayout <direction>')
   .alias('al')
-  .description('Apply auto-layout to selection (row/col)')
+  .description('Apply auto-layout (row/col) to a node or selection')
   .option('-g, --gap <n>', 'Gap between items', '8')
   .option('-p, --padding <n>', 'Padding')
+  .option('-n, --node <id>', 'Apply to this node ID (instead of current selection)')
   .action((direction, options) => {
     checkConnection();
     const layoutMode = direction === 'col' || direction === 'vertical' ? 'VERTICAL' : 'HORIZONTAL';
+    const nodeSelector = options.node
+      ? `const root = await figma.getNodeByIdAsync(${JSON.stringify(options.node)}); const sel = root ? [root] : [];`
+      : `const sel = figma.currentPage.selection;`;
     let code = `
-const sel = figma.currentPage.selection;
-if (sel.length === 0) 'No selection';
-else {
-  sel.forEach(n => {
-    if (n.type === 'FRAME' || n.type === 'COMPONENT') {
-      n.layoutMode = '${layoutMode}';
-      n.primaryAxisSizingMode = 'AUTO';
-      n.counterAxisSizingMode = 'AUTO';
-      n.itemSpacing = ${options.gap};
-      ${options.padding ? `n.paddingTop = n.paddingRight = n.paddingBottom = n.paddingLeft = ${options.padding};` : ''}
-    }
-  });
-  'Auto-layout applied to ' + sel.length + ' frames';
+(async () => {
+${nodeSelector}
+if (sel.length === 0) { return 'No node found'; }
+let count = 0;
+for (const n of sel) {
+  if (n.type === 'FRAME' || n.type === 'COMPONENT') {
+    n.layoutMode = '${layoutMode}';
+    n.primaryAxisSizingMode = 'AUTO';
+    n.counterAxisSizingMode = 'AUTO';
+    n.itemSpacing = ${options.gap};
+    ${options.padding ? `n.paddingTop = n.paddingRight = n.paddingBottom = n.paddingLeft = ${options.padding};` : ''}
+    count++;
+  }
 }
+return 'Auto-layout applied to ' + count + ' frame(s)';
+})()
 `;
     figmaUse(`eval "${code.replace(/"/g, '\\"').replace(/\n/g, ' ')}"`, { silent: false });
   });
