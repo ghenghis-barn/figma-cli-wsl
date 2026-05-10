@@ -5007,16 +5007,37 @@ function generateFigmaCode(props, x, y) {
 
 program
   .command('render <jsx>')
-  .description('Render JSX to Figma (uses figma-use render)')
+  .description('Render JSX to Figma (use --as-component to also convert result to a Figma component)')
   .option('--parent <id>', 'Parent node ID')
   .option('-x <n>', 'X position')
   .option('-y <n>', 'Y position')
   .option('--no-smart-position', 'Disable auto-positioning')
   .option('--fast', 'Use fast daemon-based rendering (simple frames only)')
+  .option('--as-component', 'After rendering, convert the resulting frame to a Figma component')
   .action(async (rawJsx, options) => {
     const jsx = unescapeShell(rawJsx);
     await checkConnection();
     try {
+      // Helper: convert a rendered frame to a Figma component if --as-component was passed
+      const maybeAsComponent = async (id) => {
+        if (!options.asComponent) return;
+        try {
+          const r = await daemonExec('eval', { code:
+            `(async () => {
+              const n = await figma.getNodeByIdAsync(${JSON.stringify(id)});
+              if (!n) throw new Error('Node not found after render: ${id}');
+              const c = figma.createComponentFromNode(n);
+              return { id: c.id, name: c.name };
+            })()`
+          });
+          if (r && r.id) {
+            console.log(chalk.green('✓ Converted to component: ' + r.id + (r.name ? ' (' + r.name + ')' : '')));
+          }
+        } catch (e) {
+          console.error(chalk.yellow('⚠ rendered, but to-component failed:'), e.message);
+        }
+      };
+
       // Calculate smart position if not specified
       let posX = options.x;
       let posY = options.y !== undefined ? options.y : 0;
@@ -5040,6 +5061,7 @@ program
         if (result && result.id) {
           console.log(chalk.green('✓ Rendered: ' + result.id));
           if (result.name) console.log(chalk.gray('  name: ' + result.name));
+          await maybeAsComponent(result.id);
           return;
         }
       }
@@ -5053,6 +5075,7 @@ program
           if (result && result.id) {
             console.log(chalk.green('✓ Rendered: ' + result.id));
             if (result.name) console.log(chalk.gray('  name: ' + result.name));
+            await maybeAsComponent(result.id);
             return;
           }
         }
@@ -5105,6 +5128,8 @@ program
       if (postProcessFixes.length > 0) {
         await applyPostProcessFixes(result.id, postProcessFixes);
       }
+
+      await maybeAsComponent(result.id);
     } catch (e) {
       const msg = e.stderr || e.message || String(e);
       // Extract node context from error if available

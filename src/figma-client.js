@@ -1483,11 +1483,18 @@ export class FigmaClient {
     let str = s.trim();
     // Tailwind-style keyword shortcuts. Designers expect shadow="lg" to work.
     const tailwind = {
+      // Tailwind sizes
       sm:   '0 1px 2px rgba(0,0,0,0.05)',
       md:   '0 4px 6px rgba(0,0,0,0.1)',
       lg:   '0 10px 15px rgba(0,0,0,0.1)',
       xl:   '0 20px 25px rgba(0,0,0,0.1)',
       '2xl':'0 25px 50px rgba(0,0,0,0.25)',
+      // Descriptive aliases (designers say "soft" not "md")
+      soft: '0 4px 12px rgba(0,0,0,0.08)',
+      subtle: '0 2px 4px rgba(0,0,0,0.06)',
+      strong: '0 16px 32px rgba(0,0,0,0.2)',
+      hard: '0 8px 0 rgba(0,0,0,1)',  // brutalist offset
+      glow: '0 0 24px rgba(59,130,246,0.5)',  // colored glow
       none: null,
     };
     const lookup = tailwind[str.toLowerCase()];
