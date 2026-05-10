@@ -8440,6 +8440,90 @@ devCmd
     }
   });
 
+// ============ SECTIONS ============
+// Group frames into named Figma sections for canvas organization.
+
+const sectionCmd = program
+  .command('section')
+  .description('Manage Figma sections (organize frames into named groups)');
+
+sectionCmd
+  .command('create <name> [nodeIds]')
+  .description('Create a section, optionally moving comma-separated node IDs into it')
+  .action(async (name, nodeIds) => {
+    await checkConnection();
+    const ids = nodeIds ? JSON.stringify(nodeIds.split(',').map(s => s.trim())) : '[]';
+    const code = `(async () => {
+      const section = figma.createSection();
+      section.name = ${JSON.stringify(name)};
+      const ids = ${ids};
+      for (const id of ids) {
+        const n = await figma.getNodeByIdAsync(id);
+        if (!n) throw new Error('Node not found: ' + id);
+        section.appendChild(n);
+      }
+      return { id: section.id, name: section.name, count: ids.length };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓'), `Created section "${r.name}" (${r.id}) with ${r.count} child(ren)`);
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
+sectionCmd
+  .command('list')
+  .description('List all sections on the current page')
+  .action(async () => {
+    await checkConnection();
+    const code = `(async () => {
+      const sections = figma.currentPage.findAll(n => n.type === 'SECTION');
+      return sections.map(s => ({ id: s.id, name: s.name, count: s.children.length }));
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      if (!r || r.length === 0) {
+        console.log(chalk.gray('(no sections on this page)'));
+        return;
+      }
+      r.forEach(s => {
+        console.log(`  ${s.name}  ${chalk.gray('(' + s.id + ')')}  ${chalk.gray(s.count + ' children')}`);
+      });
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
+sectionCmd
+  .command('add <sectionId> <nodeIds>')
+  .description('Add comma-separated nodes into an existing section')
+  .action(async (sectionId, nodeIds) => {
+    await checkConnection();
+    const ids = JSON.stringify(nodeIds.split(',').map(s => s.trim()));
+    const code = `(async () => {
+      const s = await figma.getNodeByIdAsync(${JSON.stringify(sectionId)});
+      if (!s) throw new Error('Section not found: ${sectionId}');
+      if (s.type !== 'SECTION') throw new Error('Not a section: ${sectionId}');
+      const ids = ${ids};
+      for (const id of ids) {
+        const n = await figma.getNodeByIdAsync(id);
+        if (!n) throw new Error('Node not found: ' + id);
+        s.appendChild(n);
+      }
+      return { id: s.id, name: s.name, count: s.children.length };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓'), `Added to section "${r.name}" (${r.id}). Total children: ${r.count}`);
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
 // ============ LAYOUT GRIDS ============
 // Manage column/row grids on frames (12-col grids, baseline grids, etc.)
 
