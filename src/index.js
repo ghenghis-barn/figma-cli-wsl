@@ -8440,6 +8440,137 @@ devCmd
     }
   });
 
+// ============ COMPONENT PROPERTIES ============
+// Manage variant/boolean/text/instance-swap properties on Figma components.
+
+const componentCmd = program
+  .command('component')
+  .description('Manage component properties and variants');
+
+const propCmd = componentCmd
+  .command('prop')
+  .description('Manage component properties (BOOLEAN, TEXT, INSTANCE_SWAP, VARIANT)');
+
+propCmd
+  .command('add <componentId> <name> <type> <defaultValue>')
+  .description('Add a property. Type: boolean | text | instance-swap | variant')
+  .option('-o, --options <opts>', 'Comma-separated VARIANT options (e.g. "Small,Medium,Large")')
+  .action(async (componentId, name, type, defaultValue, options) => {
+    await checkConnection();
+    const typeMap = { boolean: 'BOOLEAN', text: 'TEXT', 'instance-swap': 'INSTANCE_SWAP', variant: 'VARIANT' };
+    const apiType = typeMap[type.toLowerCase()] || type.toUpperCase();
+    if (!['BOOLEAN', 'TEXT', 'INSTANCE_SWAP', 'VARIANT'].includes(apiType)) {
+      console.error(chalk.red('✗'), `Invalid type "${type}". Use: boolean, text, instance-swap, variant`);
+      process.exit(1);
+    }
+    let parsedDefault = defaultValue;
+    if (apiType === 'BOOLEAN') parsedDefault = defaultValue === 'true' || defaultValue === '1';
+    if (apiType === 'VARIANT') {
+      console.error(chalk.red('✗'), 'VARIANT properties cannot be added directly. Create variants by:');
+      console.error('  1. Render multiple components (one per variant)');
+      console.error('  2. Convert each: figma-cli node to-component <id>');
+      console.error('  3. Combine: figma-cli component combine <id1,id2,id3> --name "MyComponent"');
+      process.exit(1);
+    }
+    const code = `(async () => {
+      const n = await figma.getNodeByIdAsync(${JSON.stringify(componentId)});
+      if (!n) throw new Error('Node not found: ${componentId}');
+      if (typeof n.addComponentProperty !== 'function') throw new Error('Node is not a component or component set');
+      const propName = n.addComponentProperty(${JSON.stringify(name)}, ${JSON.stringify(apiType)}, ${JSON.stringify(parsedDefault)});
+      return { id: n.id, name: n.name, propName };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓'), `Added property "${r.propName}" on ${r.name} (${r.id})`);
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
+propCmd
+  .command('list [componentId]')
+  .description('List component properties on a component (or current selection)')
+  .action(async (componentId) => {
+    await checkConnection();
+    const target = componentId
+      ? `await figma.getNodeByIdAsync(${JSON.stringify(componentId)})`
+      : `figma.currentPage.selection[0]`;
+    const code = `(async () => {
+      const n = ${target};
+      if (!n) throw new Error('No node found');
+      if (!('componentPropertyDefinitions' in n)) throw new Error('Node has no component properties');
+      return { id: n.id, name: n.name, props: n.componentPropertyDefinitions };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.bold(`${r.name} (${r.id})`));
+      const entries = Object.entries(r.props || {});
+      if (entries.length === 0) {
+        console.log(chalk.gray('  (no component properties)'));
+        return;
+      }
+      entries.forEach(([propName, def]) => {
+        const tail = def.type === 'VARIANT' && Array.isArray(def.variantOptions)
+          ? ` [${def.variantOptions.join(', ')}]`
+          : '';
+        console.log(`  ${propName}  ${chalk.gray(def.type)}  default=${JSON.stringify(def.defaultValue)}${tail}`);
+      });
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
+propCmd
+  .command('delete <componentId> <propName>')
+  .description('Delete a component property (use full name including #suffix)')
+  .action(async (componentId, propName) => {
+    await checkConnection();
+    const code = `(async () => {
+      const n = await figma.getNodeByIdAsync(${JSON.stringify(componentId)});
+      if (!n) throw new Error('Node not found: ${componentId}');
+      if (typeof n.deleteComponentProperty !== 'function') throw new Error('Node is not a component or component set');
+      n.deleteComponentProperty(${JSON.stringify(propName)});
+      return { id: n.id, name: n.name };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓'), `Deleted "${propName}" on ${r.name} (${r.id})`);
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
+componentCmd
+  .command('combine <ids>')
+  .description('Combine components (comma-separated IDs) into a single variant set')
+  .option('-n, --name <name>', 'Name for the resulting component set', 'ComponentSet')
+  .action(async (ids, options) => {
+    await checkConnection();
+    const idArr = ids.split(',').map(s => s.trim());
+    const code = `(async () => {
+      const components = [];
+      for (const id of ${JSON.stringify(idArr)}) {
+        const n = await figma.getNodeByIdAsync(id);
+        if (!n) throw new Error('Node not found: ' + id);
+        if (n.type !== 'COMPONENT') throw new Error('Not a component: ' + id + ' (type=' + n.type + ')');
+        components.push(n);
+      }
+      const set = figma.combineAsVariants(components, figma.currentPage);
+      set.name = ${JSON.stringify(options.name)};
+      return { id: set.id, name: set.name, count: components.length };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓'), `Combined ${r.count} components into "${r.name}" (${r.id})`);
+    } catch (e) {
+      console.error(chalk.red('✗'), e.message);
+      process.exit(1);
+    }
+  });
+
 // ============ ANNOTATIONS ============
 // Inline notes / specs on Figma nodes (tokens, usage rules, etc.)
 
