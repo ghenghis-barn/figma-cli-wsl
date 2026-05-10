@@ -6,8 +6,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "figma-ds-cli": "src/index.js",
-    "fig-start": "bin/fig-start"
+    "figma-ds-cli": "src/index.js"
   },
   "files": [
     "src",
@@ -29,7 +28,6 @@
     "url": "https://github.com/silships/figma-cli/issues"
   },
   "scripts": {
-    "setup-alias": "bash bin/setup-alias.sh",
     "test": "node --test tests/*.test.js"
   },
   "engines": {
