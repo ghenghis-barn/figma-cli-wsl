@@ -4611,6 +4611,46 @@ else { nodes.forEach(n => { if ('resize' in n) n.resize(${width}, ${height}); })
   });
 
 set
+  .command('scale <factor>')
+  .description('Scale node(s) by a factor (e.g. 1.2 = 120%, 0.5 = half). Uses node.rescale() — also scales fontSize, stroke, radius.')
+  .option('-n, --node <id>', 'Node ID')
+  .option('-q, --query <pattern>', 'Apply to all nodes whose name contains <pattern>')
+  .action(async (factor, options) => {
+    await checkConnection();
+    // Accept "1.2", "1.2x", "120%"
+    let raw = String(factor).trim().toLowerCase();
+    let f;
+    if (raw.endsWith('%')) f = parseFloat(raw.slice(0, -1)) / 100;
+    else if (raw.endsWith('x')) f = parseFloat(raw.slice(0, -1));
+    else f = parseFloat(raw);
+    if (!Number.isFinite(f) || f <= 0) {
+      console.error(chalk.red('✗'), `Invalid scale factor: ${factor}. Use e.g. 1.2, 1.2x, or 120%.`);
+      process.exit(1);
+    }
+    const nodeSelector = options.query
+      ? `const pattern = ${JSON.stringify((options.query || '').toLowerCase())}; const nodes = figma.currentPage.findAll(n => typeof n.name === 'string' && n.name.toLowerCase().includes(pattern));`
+      : options.node
+        ? `const node = await figma.getNodeByIdAsync(${JSON.stringify(options.node)}); const nodes = node ? [node] : [];`
+        : `const nodes = figma.currentPage.selection;`;
+    const code = `(async () => {
+      ${nodeSelector}
+      if (nodes.length === 0) return 'No node found';
+      let count = 0;
+      for (const n of nodes) {
+        if (typeof n.rescale === 'function') { n.rescale(${f}); count++; }
+        else if ('resize' in n && 'width' in n && 'height' in n) { n.resize(n.width * ${f}, n.height * ${f}); count++; }
+      }
+      return 'Scaled ' + count + ' element(s) by ${f}';
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      console.log(chalk.green('✓ ' + (r || 'Done')));
+    } catch (e) {
+      handleEvalError(e);
+    }
+  });
+
+set
   .command('pos <x> <y>')
   .alias('position')
   .description('Set position')
@@ -9064,6 +9104,36 @@ apiCmd
   .command('gap')
   .description('Show Figma Plugin API capabilities not yet exposed by figma-cli')
   .action(() => apiDocs.gap());
+
+apiCmd
+  .command('search <keyword>')
+  .description('Find Plugin API methods/properties whose name contains <keyword> (e.g. "scale", "resize")')
+  .option('--json', 'Output as JSON (used by figmachat for the auto-fallback)')
+  .option('-l, --limit <n>', 'Max results', '8')
+  .action((keyword, options) => {
+    const results = apiDocs.searchMethods(keyword);
+    if (results.length === 0) {
+      if (options.json) {
+        console.log('[]');
+      } else {
+        console.error(`No Plugin API method matching "${keyword}".`);
+      }
+      return;
+    }
+    const top = results.slice(0, parseInt(options.limit) || 8);
+    if (options.json) {
+      console.log(JSON.stringify(top.map(r => ({
+        method: r.method, signature: r.signature, interface: r.interface
+      })), null, 2));
+      return;
+    }
+    console.log(`Top Plugin API matches for "${keyword}":\n`);
+    for (const r of top) {
+      console.log(`  ${chalk.cyan(r.method)}  ${chalk.dim('on ' + r.interface)}`);
+      if (r.signature) console.log(`    ${chalk.gray(r.signature)}`);
+    }
+    console.log('\nTip: use these inside a `figma-cli eval "..."` call when no subcommand fits.');
+  });
 
 // (Unknown-command handling lives inside the default program.action)
 program.parse();

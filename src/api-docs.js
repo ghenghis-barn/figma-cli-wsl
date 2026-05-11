@@ -218,6 +218,73 @@ export function suggest(query) {
   console.error('  Or run `figma-cli --help` for actual CLI commands.');
 }
 
+/**
+ * Search the Plugin API docs for methods/properties whose name matches `keyword`.
+ * Returns an array of { method, signature, interface, kind } sorted by relevance.
+ * "method" is the literal name as defined under a `### name()` heading,
+ * "signature" is the next non-blank source line (typically `> **name**(args): ReturnType`).
+ *
+ * Used by figmachat's API-doc fallback: when no figma-cli subcommand matches the
+ * user's intent, search for matching methods so we can synthesize an `eval` call.
+ */
+export function searchMethods(keyword) {
+  if (!keyword || typeof keyword !== 'string') return [];
+  if (!isInstalled()) return [];
+  const kw = keyword.toLowerCase();
+  const all = listAll() || [];
+  const results = [];
+  // Method/property headings look like:
+  //   ### rescale()
+  //   ### width
+  // Followed (after a blank line) by:
+  //   > **rescale**(`scale`): `void`
+  const headingRe = /^###\s+([a-zA-Z_][a-zA-Z0-9_]*)\(?\)?\s*$/gm;
+  for (const item of all) {
+    let content;
+    try { content = fs.readFileSync(item.file, 'utf-8'); } catch { continue; }
+    headingRe.lastIndex = 0;
+    let m;
+    while ((m = headingRe.exec(content)) !== null) {
+      const name = m[1];
+      const lower = name.toLowerCase();
+      // Match if keyword is a substring OR keyword matches start of the camelCase name
+      if (!lower.includes(kw)) continue;
+      // Capture the signature: prefer a `> **name**...` blockquote line within
+      // the next ~600 chars; fall back to "Defined in:" if no signature exists
+      // (means it's a property, not a method)
+      const rest = content.slice(m.index + m[0].length, m.index + m[0].length + 800);
+      let signature = '';
+      const sigMatch = rest.match(/^>\s+(\*\*[^\n]+)/m);
+      if (sigMatch) signature = sigMatch[1].replace(/\*\*/g, '').trim();
+      else {
+        const propMatch = rest.match(/^(?:>\s+)?`([^`]+)`\s*$/m);
+        if (propMatch) signature = propMatch[1].trim();
+      }
+      // Relevance: exact match > prefix > substring; prefer shorter names
+      let s = 0;
+      if (lower === kw) s = 1000;
+      else if (lower.startsWith(kw)) s = 200 + (kw.length / lower.length) * 100;
+      else s = 50 + (kw.length / lower.length) * 50;
+      // Prefer the canonical / less-specific interfaces (LayoutMixin > FrameNode for shared methods)
+      if (item.name.endsWith('Mixin')) s += 5;
+      results.push({
+        method: name,
+        signature,
+        interface: item.name,
+        kind: item.kind,
+        score: s,
+      });
+    }
+  }
+  // Deduplicate by method name keeping the highest-scoring source
+  const dedup = new Map();
+  for (const r of results) {
+    const ex = dedup.get(r.method);
+    if (!ex || r.score > ex.score) dedup.set(r.method, r);
+  }
+  return [...dedup.values()].sort((a, b) => b.score - a.score);
+}
+
 export function gap() {
   const all = listAll();
   if (!all) {
