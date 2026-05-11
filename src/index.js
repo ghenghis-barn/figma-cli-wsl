@@ -722,6 +722,43 @@ program
   .description('CLI for managing Figma design systems')
   .version(pkg.version);
 
+// Top-level shortcut: `figma-cli import <file>` — auto-detects what the file
+// is and routes to the right importer. Today: DESIGN.md (figma extraction
+// format) is the only recognized type, but the dispatcher leaves room for
+// other formats (tokens.json, .figmavars, etc.) without breaking the UX.
+program
+  .command('import <file>')
+  .description('Auto-import a design file. Currently supports DESIGN.md (Figma extraction format).')
+  .option('-c, --collection <name>', 'Collection name (DESIGN.md only)')
+  .option('--print-context', 'Print figmachat context summary without creating variables')
+  .action(async (file, options) => {
+    const fs = await import('fs');
+    if (!fs.existsSync(file)) {
+      console.error(chalk.red('✗'), `not found: ${file}`);
+      process.exit(1);
+    }
+    // Sniff the file. We don't trust the extension alone — a `.md` that
+    // doesn't have the machine-readable token block isn't a design system.
+    // The block usually sits at the END of the file, so read the whole thing
+    // (these files are typically a few hundred KB max — cheap).
+    const content = fs.readFileSync(file, 'utf-8');
+    const isDesignMd = /```json\s+design-tokens/.test(content) || /^##\s+\d+\.\s+Machine-readable tokens/m.test(content);
+    if (isDesignMd) {
+      // Forward to the existing implementation via Commander's own machinery.
+      const args = ['tokens', 'import-design-md', file];
+      if (options.collection) args.push('-c', options.collection);
+      if (options.printContext) args.push('--print-context');
+      await program.parseAsync(args, { from: 'user' });
+      return;
+    }
+    console.error(chalk.red('✗'), `Unrecognized format: ${file}`);
+    console.error(chalk.yellow('  Currently `figma-cli import` understands:'));
+    console.error('    • DESIGN.md (must contain "## Machine-readable tokens" + `json design-tokens` block)');
+    console.error(chalk.gray('  For other formats use the dedicated importers:'));
+    console.error(chalk.gray('    figma-cli tokens import <file.json>   (raw JSON tokens)'));
+    process.exit(1);
+  });
+
 // Default action when no command is given
 program.action(async () => {
   // If user passed an unknown subcommand as first arg, suggest from API docs

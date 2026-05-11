@@ -104,8 +104,10 @@ Run `figma-cli api setup` once (5 MB download) to enable this. Works offline for
 If you (or a teammate) extracted a Figma file into a `DESIGN.md` — using any tool that emits the standard format with a `## 11. Machine-readable tokens` section and a `` ```json design-tokens `` code block at the end — figma-cli can ingest it directly:
 
 ```bash
-figma-cli tokens import-design-md /path/to/DESIGN.md
+figma-cli import /path/to/DESIGN.md
 ```
+
+(Same thing under the hood: `figma-cli tokens import-design-md /path/to/DESIGN.md`. The short form auto-detects the format.)
 
 This creates Figma variables for every color, radius, and typography token defined in the JSON block. The collection is named after the system's `meta.source` (e.g. "Carbon Design System", "Material 3", "Polaris") unless you pass `-c <name>`.
 
