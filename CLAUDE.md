@@ -43,13 +43,38 @@ CLI that controls Figma Desktop directly. No API key needed.
 ## Key Rules
 
 1. **Always use `render` for frames** - has smart positioning
-2. **Never use `eval` to create** - no positioning, overlaps at (0,0)
+2. **Never use `eval` to create new visual nodes** - no positioning, overlaps at (0,0), and bypasses every safety guard (auto-split, name dedup, constraints, fills). `eval` is for Plugin API operations that have no equivalent CLI subcommand. Period.
 3. **Never use `npx figma-use render`** - no smart positioning
 4. **For multiple frames:** Use `render-batch`
 5. **Convert to components:** `node to-component` after creation
 6. **Never show terminal commands to users.** Run silently, give friendly feedback.
 7. **NEVER delete existing nodes** - users may have components they want to keep!
 8. **Always verify after creating:** `figma-cli verify "NODE_ID"`
+
+### 🛑 MULTI-ITEM CREATION (the rule that gets violated the most)
+
+**The intent test:** "user asked for N <noun>" → **N independent top-level nodes on the canvas**. NOT one wrapper Component containing N children. NOT one Frame with `flex="row"`. N separate nodes.
+
+| User says | RIGHT | WRONG |
+|---|---|---|
+| "create 3 buttons" | `figma-cli shadcn add button --count 3` | a Component called "buttons" containing 3 buttons |
+| "create 5 cards" | `figma-cli shadcn add card --count 5` | a Frame called "Cards" with 5 children |
+| "5 custom pricing cards" | `figma-cli render-batch '["<Frame>...</Frame>", …]' --direction row` | `figma-cli eval` writing a script that creates a parent + appendChild × 5 |
+| "make a card with title + button" | ONE Frame containing title + button (legit composition) | (this case is fine — different children, single component is correct) |
+
+**Why this matters:** users want to move, reuse, or convert each item individually. Bundling them into a Component breaks every downstream operation (`figma-cli use <theme>`, drag-to-move, individual `to-component`).
+
+**Forbidden patterns:**
+- `figma-cli eval --file <script>` where the script does `figma.createFrame()` + `figma.createComponent()` + `parent.appendChild()` more than once to wrap "N items"
+- `figma-cli render '<Frame><Frame>btn1</Frame><Frame>btn2</Frame>...</Frame>'` (auto-split catches this, but don't rely on it)
+- `figma-cli node to-component` on a wrapper Frame that contains N similar children
+
+**If you accidentally did it:** `figma-cli unwrap <wrapperId>` rescues the children to the parent and deletes the wrapper. Use it.
+
+**eval is allowed for:**
+- Single-node operations that don't have a CLI command (e.g. setting an obscure Plugin API property)
+- Bulk reads (querying current state)
+- Operations that mutate existing nodes (not creation)
 
 ---
 

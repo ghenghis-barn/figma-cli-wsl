@@ -5264,6 +5264,64 @@ program
     }
   });
 
+// ============ UNWRAP (rescue a falsely-wrapped group of items) ============
+//
+// LLM callers sometimes create N similar items inside a single wrapper
+// component when the user actually wanted N independent top-level items.
+// `unwrap` rescues that: it takes a node, lifts every direct child up to
+// the wrapper's parent (preserving canvas position), and deletes the
+// wrapper. Works for FRAME, COMPONENT, GROUP, SECTION.
+
+program
+  .command('unwrap <nodeId>')
+  .description('Lift the children of a wrapper node up to its parent, then delete the wrapper. Use when an LLM accidentally bundled N items into one component.')
+  .option('--keep-wrapper', 'Move children out but keep the (now-empty) wrapper around')
+  .action(async (nodeId, options) => {
+    await checkConnection();
+    const keepWrapper = !!options.keepWrapper;
+    const code = `(async () => {
+      const n = await figma.getNodeByIdAsync(${JSON.stringify(nodeId)});
+      if (!n) throw new Error('Node not found: ' + ${JSON.stringify(nodeId)});
+      if (!('children' in n) || !Array.isArray(n.children)) {
+        return 'Node ' + n.id + ' has no children to unwrap';
+      }
+      const parent = n.parent;
+      if (!parent) throw new Error('Wrapper has no parent (is it the page root?)');
+      const isOnPage = parent.type === 'PAGE';
+      const offsetX = isOnPage ? n.x : 0;
+      const offsetY = isOnPage ? n.y : 0;
+      const moved = [];
+      // Snapshot children first — appendChild mutates the live array.
+      const kids = n.children.slice();
+      for (const c of kids) {
+        const cx = c.x, cy = c.y;
+        parent.appendChild(c);
+        if (isOnPage && 'x' in c) {
+          c.x = offsetX + cx;
+          c.y = offsetY + cy;
+        }
+        moved.push(c.id);
+      }
+      const wrapperId = n.id;
+      const wrapperName = n.name;
+      if (!${keepWrapper}) n.remove();
+      return { unwrapped: wrapperId, name: wrapperName, children: moved, deletedWrapper: !${keepWrapper} };
+    })()`;
+    try {
+      const r = await daemonExec('eval', { code });
+      if (typeof r === 'string') {
+        console.log(chalk.yellow(r));
+        return;
+      }
+      console.log(chalk.green(`✓ Unwrapped "${r.name}" (${r.unwrapped}) — ${r.children.length} child(ren) lifted to parent`));
+      console.log(chalk.gray('  children: ' + r.children.join(', ')));
+      if (r.deletedWrapper) console.log(chalk.gray('  wrapper deleted'));
+      else console.log(chalk.gray('  wrapper kept (--keep-wrapper)'));
+    } catch (e) {
+      handleEvalError(e);
+    }
+  });
+
 // ============ USE (switch theme / rebind variables to a target collection) ============
 //
 // Solves the parallel-design-systems case: when the user has multiple
