@@ -5880,6 +5880,7 @@ program
   .option('--fast', 'Use fast daemon-based rendering (simple frames only)')
   .option('--as-component', 'After rendering, convert the resulting frame to a Figma component')
   .option('--keep-wrapper', 'Keep an outer flex Frame as a parent — disables the auto-split that turns "N items in a flex wrapper" into independent canvas items')
+  .option('-c, --collection <name>', 'Pin var:<name> resolution to this variable collection (case-insensitive, fuzzy match). Per-attr `var:collection:name` overrides this.')
   .action(async (rawJsx, options) => {
     const jsx = unescapeShell(rawJsx);
     await checkConnection();
@@ -5898,6 +5899,7 @@ program
           '--direction', split.direction,
         ];
         if (options.asComponent) args.push('--as-component');
+        if (options.collection) args.push('--collection', options.collection);
         await program.parseAsync(args, { from: 'user' });
         return;
       }
@@ -5942,6 +5944,7 @@ program
           jsx.includes('blur=') || jsx.includes('bgBlur=') || jsx.includes('image=')) {
         const { FigmaClient } = await import('./figma-client.js');
         const client = new FigmaClient();
+        if (options.collection) client.setCollection(options.collection);
         const code = await client.parseJSX(jsx);
         const result = await daemonExec('eval', { code });
         if (result && result.id) {
@@ -6043,6 +6046,7 @@ program
   .option('-g, --gap <n>', 'Gap between frames', '40')
   .option('-d, --direction <dir>', 'Layout direction: row (horizontal) or col (vertical)', 'row')
   .option('--as-component', 'After rendering, convert each resulting frame to a Figma component')
+  .option('-c, --collection <name>', 'Pin var:<name> resolution to this variable collection (case-insensitive, fuzzy match). Per-attr `var:collection:name` overrides this.')
   .action(async (jsxArrayStr, options) => {
     await checkConnection();
     try {
@@ -6058,7 +6062,8 @@ program
       const results = await daemonExec('render-batch', {
         jsxArray,
         gap,
-        vertical
+        vertical,
+        collection: options.collection || undefined,
       });
 
       if (Array.isArray(results)) {

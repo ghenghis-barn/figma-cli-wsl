@@ -424,6 +424,7 @@ async function handleRequest(req, res) {
               // Single eval for ALL frames (10x faster than loop)
               const ClientClass = await getFigmaClient();
               const batchParser = new ClientClass();
+              if (data.collection) batchParser.setCollection(data.collection);
               const batchCode = batchParser.parseJSXBatch(jsxArray, {
                 gap: gap || 40,
                 vertical: vertical || false

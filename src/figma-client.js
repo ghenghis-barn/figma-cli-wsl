@@ -17,6 +17,16 @@ export class FigmaClient {
     this.pageUrl = null;
     this.fileType = null; // 'design', 'file', or 'unknown'
     this.executionContextId = null; // For Figma v39+ sandboxed context
+    // Optional: pin var:<name> resolution to a single Variable Collection.
+    // Set via setCollection() or directly. Per-attribute `var:collection:name`
+    // in JSX overrides this. nullish = use the global "shadcn first, then any"
+    // fallback in the var-cache loader.
+    this.collectionFilter = null;
+  }
+
+  /** Pin variable lookups to a specific collection (by case-insensitive name match). */
+  setCollection(name) {
+    this.collectionFilter = name || null;
   }
 
   /**
@@ -356,29 +366,74 @@ export class FigmaClient {
     // multiple collections define the same token. Avoids N round-trips
     // when a user imports a Carbon / Material / DESIGN.md system with ~100
     // variables — the per-id loop made renders feel like a hang.
+    // Resolve collection filter (case-insensitive substring), evaluated in
+    // the host (we know the user-passed string here). Becomes a fixed set of
+    // collection IDs that the Plugin-side resolver will restrict itself to.
+    const colFilter = this.collectionFilter;
     const varLoadCode = anyUsesVars ? `
-      if (!globalThis.__varsCache || Date.now() - (globalThis.__varsCacheTime || 0) > 30000) {
+      // Compose the "collection scope" once per cache window. When a filter
+      // is active, ONLY variables from collections whose name matches the
+      // filter make it into the cache — every other token resolves to
+      // "missing", which is correct: the caller chose this scope.
+      if (!globalThis.__varsCache || globalThis.__varsCacheFilter !== ${JSON.stringify(colFilter)} ||
+          Date.now() - (globalThis.__varsCacheTime || 0) > 30000) {
         const [collections, allVars] = await Promise.all([
           figma.variables.getLocalVariableCollectionsAsync(),
           figma.variables.getLocalVariablesAsync(),
         ]);
+        const filter = ${JSON.stringify(colFilter)};
         const shadcnColIds = new Set(
           collections.filter(c => c.name.startsWith('shadcn')).map(c => c.id)
         );
-        globalThis.__varsCache = {};
-        // Pass 1: shadcn first (preferred when both exist)
-        for (const v of allVars) {
-          if (shadcnColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+        let scopedColIds = null;
+        if (filter) {
+          const fl = filter.toLowerCase();
+          const scoped = collections.filter(c =>
+            c.name.toLowerCase() === fl || c.name.toLowerCase().includes(fl)
+          );
+          scopedColIds = new Set(scoped.map(c => c.id));
         }
-        // Pass 2: everything else, only filling in unknown names
-        for (const v of allVars) {
-          if (!shadcnColIds.has(v.variableCollectionId) && !globalThis.__varsCache[v.name]) {
-            globalThis.__varsCache[v.name] = v;
+        globalThis.__varsCache = {};
+        if (scopedColIds) {
+          for (const v of allVars) {
+            if (scopedColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+          }
+        } else {
+          // Pass 1: shadcn first (preferred when both exist)
+          for (const v of allVars) {
+            if (shadcnColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+          }
+          // Pass 2: everything else, only filling in unknown names
+          for (const v of allVars) {
+            if (!shadcnColIds.has(v.variableCollectionId) && !globalThis.__varsCache[v.name]) {
+              globalThis.__varsCache[v.name] = v;
+            }
           }
         }
+        // Also stash collection-name → id map for the var:collection:name
+        // per-attribute override syntax. The renderer below consults this.
+        globalThis.__varsByCollection = {};
+        const colsByLower = {};
+        for (const c of collections) colsByLower[c.name.toLowerCase()] = c.id;
+        for (const v of allVars) {
+          // Build a "collection-qualified" cache too, e.g. "figma:primary"
+          const col = collections.find(c => c.id === v.variableCollectionId);
+          if (col) globalThis.__varsByCollection[col.name.toLowerCase() + ':' + v.name] = v;
+        }
         globalThis.__varsCacheTime = Date.now();
+        globalThis.__varsCacheFilter = filter;
       }
       const vars = globalThis.__varsCache;
+      const varsByCollection = globalThis.__varsByCollection || {};
+      // Lookup helper for the per-attr "var:collection:name" syntax. Falls
+      // back to the scoped cache if the qualified key isn't found.
+      const lookupVar = (key) => {
+        if (key.includes(':')) {
+          const [colName, varName] = key.split(':', 2);
+          return varsByCollection[colName.toLowerCase() + ':' + varName] || vars[varName];
+        }
+        return vars[key];
+      };
       const boundFill = (variable) => figma.variables.setBoundVariableForPaint(
         { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
       );
@@ -1179,14 +1234,14 @@ export class FigmaClient {
             const varColorCode = icBg.startsWith('var:') ? (() => {
               const varName = icBg.slice(4);
               return `
-            if (vars && vars[${JSON.stringify(varName)}]) {
+            { const __v = lookupVar(${JSON.stringify(varName)}); if (__v) {
               function colorizeVar${idx}(n) {
-                if (n.fills && n.fills.length > 0) n.fills = [boundFill(vars[${JSON.stringify(varName)}])];
-                if (n.strokes && n.strokes.length > 0) n.strokes = [figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0.5,g:0.5,b:0.5}},'color',vars[${JSON.stringify(varName)}])];
+                if (n.fills && n.fills.length > 0) n.fills = [boundFill(__v)];
+                if (n.strokes && n.strokes.length > 0) n.strokes = [figma.variables.setBoundVariableForPaint({type:'SOLID',color:{r:0.5,g:0.5,b:0.5}},'color',__v)];
                 if (n.children) n.children.forEach(colorizeVar${idx});
               }
               if (el${idx}.children) el${idx}.children.forEach(colorizeVar${idx});
-            }`;
+            } }`;
             })() : '';
 
             return `
@@ -1303,31 +1358,58 @@ export class FigmaClient {
     const rootImageCode = props.image ? this.generateImageFillCode(props.image, 'frame', props.imageScale) : '';
 
     // Variable loading code with caching (only if any vars used)
+    const colFilter2 = this.collectionFilter;
     const varLoadCode = usesVars ? `
-        // Load variables from ALL local collections in one batched call
-        // (cached for 30s). shadcn pass first so a shadcn-style name wins
-        // ties; everything else fills in afterwards so Carbon / Material /
-        // user-imported design systems resolve too.
-        if (!globalThis.__varsCache || Date.now() - (globalThis.__varsCacheTime || 0) > 30000) {
+        if (!globalThis.__varsCache || globalThis.__varsCacheFilter !== ${JSON.stringify(colFilter2)} ||
+            Date.now() - (globalThis.__varsCacheTime || 0) > 30000) {
           const [collections, allVars] = await Promise.all([
             figma.variables.getLocalVariableCollectionsAsync(),
             figma.variables.getLocalVariablesAsync(),
           ]);
+          const filter = ${JSON.stringify(colFilter2)};
           const shadcnColIds = new Set(
             collections.filter(c => c.name.startsWith('shadcn')).map(c => c.id)
           );
-          globalThis.__varsCache = {};
-          for (const v of allVars) {
-            if (shadcnColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+          let scopedColIds = null;
+          if (filter) {
+            const fl = filter.toLowerCase();
+            scopedColIds = new Set(
+              collections.filter(c => c.name.toLowerCase() === fl || c.name.toLowerCase().includes(fl))
+                .map(c => c.id)
+            );
           }
-          for (const v of allVars) {
-            if (!shadcnColIds.has(v.variableCollectionId) && !globalThis.__varsCache[v.name]) {
-              globalThis.__varsCache[v.name] = v;
+          globalThis.__varsCache = {};
+          if (scopedColIds) {
+            for (const v of allVars) {
+              if (scopedColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+            }
+          } else {
+            for (const v of allVars) {
+              if (shadcnColIds.has(v.variableCollectionId)) globalThis.__varsCache[v.name] = v;
+            }
+            for (const v of allVars) {
+              if (!shadcnColIds.has(v.variableCollectionId) && !globalThis.__varsCache[v.name]) {
+                globalThis.__varsCache[v.name] = v;
+              }
             }
           }
+          globalThis.__varsByCollection = {};
+          for (const v of allVars) {
+            const col = collections.find(c => c.id === v.variableCollectionId);
+            if (col) globalThis.__varsByCollection[col.name.toLowerCase() + ':' + v.name] = v;
+          }
           globalThis.__varsCacheTime = Date.now();
+          globalThis.__varsCacheFilter = filter;
         }
         const vars = globalThis.__varsCache;
+        const varsByCollection = globalThis.__varsByCollection || {};
+        const lookupVar = (key) => {
+          if (key.includes(':')) {
+            const [colName, varName] = key.split(':', 2);
+            return varsByCollection[colName.toLowerCase() + ':' + varName] || vars[varName];
+          }
+          return vars[key];
+        };
         const boundFill = (variable) => figma.variables.setBoundVariableForPaint(
           { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
         );
@@ -1451,7 +1533,9 @@ export class FigmaClient {
     if (this.isVarRef(value)) {
       const varName = this.getVarName(value);
       return {
-        code: `${elementVar}.${property} = [boundFill(vars['${varName}'])];`,
+        // Use lookupVar so the per-attr `var:collection:name` syntax resolves
+        // even with a global --collection scope active. Falls back to vars[name].
+        code: `${elementVar}.${property} = [boundFill(lookupVar('${varName}'))];`,
         usesVars: true
       };
     }
@@ -1683,7 +1767,7 @@ export class FigmaClient {
     if (this.isVarRef(value)) {
       const varName = this.getVarName(value);
       return {
-        code: `${elementVar}.strokes = [boundFill(vars['${varName}'])]; ${elementVar}.strokeWeight = ${strokeWidth};${alignCode}`,
+        code: `${elementVar}.strokes = [boundFill(lookupVar('${varName}'))]; ${elementVar}.strokeWeight = ${strokeWidth};${alignCode}`,
         usesVars: true
       };
     } else {
