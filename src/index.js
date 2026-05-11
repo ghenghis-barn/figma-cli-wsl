@@ -5165,6 +5165,155 @@ program
     }
   });
 
+// ============ USE (switch theme / rebind variables to a target collection) ============
+//
+// Solves the parallel-design-systems case: when the user has multiple
+// collections with overlapping token names (e.g. airbnb and cursor both
+// define primary / body / ink), `use <collection>` walks all variable
+// bindings on the selection (or a node, or the whole page) and rebinds them
+// to the target collection's variables — name-matched.
+//
+// Example: design a card bound to var:primary from the airbnb collection,
+// run `figma-cli use cursor` while the card is selected → the same card
+// now renders with Cursor's primary color. No re-design needed.
+
+program
+  .command('use <collection>')
+  .alias('theme')
+  .description('Switch variable bindings to a target collection. Re-binds every bound variable on the selection (or --node, or --all) to the same-named variable in <collection>.')
+  .option('-n, --node <id>', 'Node ID (or comma-separated list of IDs)')
+  .option('-a, --all', 'Apply to every node on the current page (not just selection)')
+  .option('--dry-run', 'Print what would be rebound, don\'t modify anything')
+  .action(async (collectionName, options) => {
+    await checkConnection();
+    const dryRun = !!options.dryRun;
+    const target = collectionName;
+    const baseSelector = options.all
+      ? `const roots = figma.currentPage.children.slice();`
+      : options.node
+        ? (() => {
+            const ids = String(options.node).split(/[\s,]+/).filter(Boolean);
+            if (ids.length === 1) return `const __n = await figma.getNodeByIdAsync(${JSON.stringify(ids[0])}); const roots = __n ? [__n] : [];`;
+            return `const __ids = ${JSON.stringify(ids)};
+                    const __res = await Promise.all(__ids.map(id => figma.getNodeByIdAsync(id)));
+                    const roots = __res.filter(Boolean);`;
+          })()
+        : `const roots = figma.currentPage.selection.slice();`;
+
+    const code = `(async () => {
+      ${baseSelector}
+      if (roots.length === 0) return 'No node found (selection / --node / --all all empty)';
+
+      // Resolve target collection (case-insensitive substring match)
+      const collections = await figma.variables.getLocalVariableCollectionsAsync();
+      const targetQ = ${JSON.stringify(target.toLowerCase())};
+      const targetCol = collections.find(c => c.name.toLowerCase() === targetQ)
+                     || collections.find(c => c.name.toLowerCase().includes(targetQ));
+      if (!targetCol) {
+        return 'Collection not found: ${target}. Available: ' + collections.map(c => c.name).join(', ');
+      }
+
+      // Build name → variable map for the target collection
+      const allVars = await figma.variables.getLocalVariablesAsync();
+      const targetMap = {};
+      for (const v of allVars) {
+        if (v.variableCollectionId === targetCol.id) targetMap[v.name] = v;
+      }
+      if (Object.keys(targetMap).length === 0) {
+        return 'Target collection "' + targetCol.name + '" has no variables';
+      }
+
+      // Walk every node recursively and find bindings to rebind
+      const walked = [];
+      const seen = new Set();
+      function walk(n) {
+        if (!n || seen.has(n.id)) return;
+        seen.add(n.id);
+        walked.push(n);
+        if ('children' in n && n.children) for (const c of n.children) walk(c);
+      }
+      for (const r of roots) walk(r);
+
+      let reboundCount = 0;
+      const reboundNames = new Set();
+      const missing = new Set();
+      const dryRun = ${dryRun};
+
+      // For each paint-bearing node, swap variable bindings on fills/strokes
+      for (const n of walked) {
+        for (const prop of ['fills', 'strokes']) {
+          if (!(prop in n)) continue;
+          const paints = n[prop];
+          if (!Array.isArray(paints) || paints.length === 0) continue;
+          let changed = false;
+          const newPaints = paints.map(paint => {
+            if (!paint.boundVariables || !paint.boundVariables.color) return paint;
+            const oldRef = paint.boundVariables.color;
+            const oldVar = oldRef && oldRef.id ? allVars.find(v => v.id === oldRef.id) : null;
+            if (!oldVar) return paint;
+            // Already in target collection → leave alone
+            if (oldVar.variableCollectionId === targetCol.id) return paint;
+            const newVar = targetMap[oldVar.name];
+            if (!newVar) { missing.add(oldVar.name); return paint; }
+            reboundCount++;
+            reboundNames.add(oldVar.name);
+            changed = true;
+            if (dryRun) return paint;
+            return figma.variables.setBoundVariableForPaint(paint, 'color', newVar);
+          });
+          if (changed && !dryRun) n[prop] = newPaints;
+        }
+        // Also handle scalar bindings (cornerRadius, opacity, strokeWeight, …)
+        // via the generic boundVariables map.
+        if ('boundVariables' in n && n.boundVariables) {
+          for (const [field, ref] of Object.entries(n.boundVariables)) {
+            if (!ref || !ref.id) continue;
+            // Some fields are arrays (fills/strokes already handled above)
+            if (Array.isArray(ref)) continue;
+            const oldVar = allVars.find(v => v.id === ref.id);
+            if (!oldVar) continue;
+            if (oldVar.variableCollectionId === targetCol.id) continue;
+            const newVar = targetMap[oldVar.name];
+            if (!newVar) { missing.add(oldVar.name); continue; }
+            reboundCount++;
+            reboundNames.add(oldVar.name);
+            if (!dryRun) {
+              try { n.setBoundVariable(field, newVar); } catch (e) { /* unsupported field */ }
+            }
+          }
+        }
+      }
+
+      return {
+        targetCollection: targetCol.name,
+        nodesWalked: walked.length,
+        rebindings: reboundCount,
+        uniqueTokens: [...reboundNames].sort(),
+        missingInTarget: [...missing].sort(),
+        dryRun,
+      };
+    })()`;
+
+    try {
+      const r = await daemonExec('eval', { code });
+      if (typeof r === 'string') {
+        console.error(chalk.yellow(r));
+        return;
+      }
+      const verb = r.dryRun ? 'Would rebind' : 'Rebound';
+      console.log(chalk.green(`✓ ${verb} ${r.rebindings} binding(s) on ${r.nodesWalked} node(s) → ${r.targetCollection}`));
+      if (r.uniqueTokens.length > 0) {
+        console.log(chalk.gray(`  tokens: ${r.uniqueTokens.join(', ')}`));
+      }
+      if (r.missingInTarget.length > 0) {
+        console.log(chalk.yellow(`  ⚠ not found in ${r.targetCollection}: ${r.missingInTarget.join(', ')}`));
+        console.log(chalk.gray(`    (those bindings were left pointing at the original collection)`));
+      }
+    } catch (e) {
+      handleEvalError(e);
+    }
+  });
+
 // ============ INSPECT (reverse: Figma → Spec) ============
 
 program
