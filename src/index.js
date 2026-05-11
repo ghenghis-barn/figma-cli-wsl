@@ -4965,9 +4965,10 @@ else { nodes.forEach(n => { if ('resize' in n) n.resize(${width}, ${height}); })
 
 set
   .command('scale <factor>')
-  .description('Scale node(s) by a factor (e.g. 1.2 = 120%, 0.5 = half). Uses node.rescale() — also scales fontSize, stroke, radius.')
+  .description('Scale node(s) by a factor (e.g. 1.2 = 120%, 0.5 = half). Uses node.rescale() — also scales fontSize, stroke, radius. For multi-node selections, the SPACING between nodes is scaled too so they don\'t overlap (pass --keep-spacing to disable).')
   .option('-n, --node <id>', 'Node ID')
   .option('-q, --query <pattern>', 'Apply to all nodes whose name contains <pattern>')
+  .option('--keep-spacing', 'Only scale each node\'s size — do NOT reposition siblings to preserve relative spacing')
   .action(async (factor, options) => {
     await checkConnection();
     // Accept "1.2", "1.2x", "120%"
@@ -4980,16 +4981,33 @@ set
       console.error(chalk.red('✗'), `Invalid scale factor: ${factor}. Use e.g. 1.2, 1.2x, or 120%.`);
       process.exit(1);
     }
+    const scaleSpacing = !options.keepSpacing;
     const nodeSelector = buildNodeSelector(options);
     const code = `(async () => {
       ${nodeSelector}
       if (nodes.length === 0) return 'No node found';
+      // Capture original positions BEFORE rescaling so we can scale the
+      // sibling-spacing too. Without this, rescale() doubles the size but
+      // leaves x/y untouched and the items overlap each other.
+      const scaleSpacing = ${scaleSpacing};
+      const origin = scaleSpacing && nodes.length > 1
+        ? { x: Math.min(...nodes.map(n => n.x || 0)), y: Math.min(...nodes.map(n => n.y || 0)) }
+        : null;
+      const orig = nodes.map(n => ({ x: n.x || 0, y: n.y || 0 }));
       let count = 0;
       for (const n of nodes) {
         if (typeof n.rescale === 'function') { n.rescale(${f}); count++; }
         else if ('resize' in n && 'width' in n && 'height' in n) { n.resize(n.width * ${f}, n.height * ${f}); count++; }
       }
-      return 'Scaled ' + count + ' element(s) by ${f}';
+      if (origin) {
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (typeof n.x !== 'number') continue;
+          n.x = origin.x + (orig[i].x - origin.x) * ${f};
+          n.y = origin.y + (orig[i].y - origin.y) * ${f};
+        }
+      }
+      return 'Scaled ' + count + ' element(s) by ${f}' + (origin ? ' (spacing scaled too)' : '');
     })()`;
     try {
       const r = await daemonExec('eval', { code });
