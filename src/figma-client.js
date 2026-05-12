@@ -319,7 +319,7 @@ export class FigmaClient {
     let anyUsesVars = false;
 
     parsed.forEach(({ props, children }) => {
-      const bg = props.bg || props.fill || '#ffffff';
+      const bg = props.bg || props.fill || null;
       const stroke = props.stroke || null;
       if (this.isVarRef(bg)) anyUsesVars = true;
       if (stroke && this.isVarRef(stroke)) anyUsesVars = true;
@@ -447,9 +447,19 @@ export class FigmaClient {
         }
         return vars[key];
       };
-      const boundFill = (variable) => figma.variables.setBoundVariableForPaint(
-        { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
-      );
+      // Collect names that callers asked for but didn't resolve so we can
+      // surface them at the end instead of silently rendering grey.
+      globalThis.__unresolvedVars = globalThis.__unresolvedVars || new Set();
+      const boundFill = (variable, requestedKey) => {
+        if (!variable) {
+          if (requestedKey) globalThis.__unresolvedVars.add(requestedKey);
+          // Fallback paint stays grey so the renderer doesn't crash.
+          return { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } };
+        }
+        return figma.variables.setBoundVariableForPaint(
+          { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
+        );
+      };
     ` : '';
 
     // Generate code for each frame
@@ -459,7 +469,7 @@ export class FigmaClient {
       const width = props.w || props.width || 320;
       const hasExplicitHeight = props.h !== undefined || props.height !== undefined;
       const height = props.h || props.height || 200;
-      const bg = props.bg || props.fill || '#ffffff';
+      const bg = props.bg || props.fill || null;
       const stroke = props.stroke || null;
       const rounded = props.rounded || props.radius || 0;
       const flex = props.flex || 'col';
@@ -625,7 +635,14 @@ export class FigmaClient {
 
         const results = [];
         ${framesCodes}
-        return results;
+        // Surface unresolved var: references back to the caller. Array-prop
+        // shorthand is lost by JSON.stringify, so wrap in an object when we
+        // have warnings — caller unwraps. Backwards-compatible: plain success
+        // still returns the array directly.
+        const unresolved = globalThis.__unresolvedVars
+          ? [...globalThis.__unresolvedVars].sort() : [];
+        globalThis.__unresolvedVars = new Set();
+        return unresolved.length > 0 ? { frames: results, unresolved } : results;
       })()
     `;
   }
@@ -938,7 +955,7 @@ export class FigmaClient {
     const fillHeight = rawHeight === 'fill';
     const width = fillWidth ? 100 : (rawWidth || 320);
     const height = fillHeight ? 100 : (rawHeight || 200);
-    const bg = props.bg || props.fill || '#ffffff';
+    const bg = props.bg || props.fill || null;
     const stroke = props.stroke || null;
     const strokeWidth = props.strokeWidth || 1;
     const strokeAlignProp = props.strokeAlign || null;
@@ -1432,9 +1449,16 @@ export class FigmaClient {
           }
           return vars[key];
         };
-        const boundFill = (variable) => figma.variables.setBoundVariableForPaint(
-          { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
-        );
+        globalThis.__unresolvedVars = globalThis.__unresolvedVars || new Set();
+        const boundFill = (variable, requestedKey) => {
+          if (!variable) {
+            if (requestedKey) globalThis.__unresolvedVars.add(requestedKey);
+            return { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } };
+          }
+          return figma.variables.setBoundVariableForPaint(
+            { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
+          );
+        };
     ` : '';
 
     // Font loading with caching
@@ -1552,12 +1576,19 @@ export class FigmaClient {
    * Returns { code: string, usesVars: boolean }
    */
   generateFillCode(value, elementVar, property = 'fills') {
+    // No fill at all → transparent. Lets callers default `bg` to null when
+    // the user didn't ask for one, instead of forcing white.
+    if (value === null || value === undefined) {
+      return { code: `${elementVar}.${property} = [];`, usesVars: false };
+    }
     if (this.isVarRef(value)) {
       const varName = this.getVarName(value);
       return {
         // Use lookupVar so the per-attr `var:collection:name` syntax resolves
         // even with a global --collection scope active. Falls back to vars[name].
-        code: `${elementVar}.${property} = [boundFill(lookupVar('${varName}'))];`,
+        // Pass the requested key so unresolved names get reported instead of
+        // silently rendering grey.
+        code: `${elementVar}.${property} = [boundFill(lookupVar('${varName}'), '${varName}')];`,
         usesVars: true
       };
     }
@@ -1789,7 +1820,7 @@ export class FigmaClient {
     if (this.isVarRef(value)) {
       const varName = this.getVarName(value);
       return {
-        code: `${elementVar}.strokes = [boundFill(lookupVar('${varName}'))]; ${elementVar}.strokeWeight = ${strokeWidth};${alignCode}`,
+        code: `${elementVar}.strokes = [boundFill(lookupVar('${varName}'), '${varName}')]; ${elementVar}.strokeWeight = ${strokeWidth};${alignCode}`,
         usesVars: true
       };
     } else {

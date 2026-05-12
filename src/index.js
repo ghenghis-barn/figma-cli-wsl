@@ -58,6 +58,12 @@ function detectWrapperSplit(jsx) {
   const inner = outerMatch[2];
   const flexMatch = outerAttrs.match(/flex\s*=\s*["']?(row|col|column|vertical|horizontal)["']?/);
   if (!flexMatch) return null;
+  // CRITICAL: only split when the outer is PURE layout. If the outer carries
+  // any visual property (bg, fill, stroke, rounded, shadow, blur, image), it's
+  // a real composite component (Card, Modal, Banner…) and splitting destroys
+  // the design. Layout-only attrs like gap, padding, justify, items are fine.
+  const visualAttrs = /\b(bg|fill|stroke|rounded|radius|shadow|innerShadow|blur|bgBlur|image)\s*=/;
+  if (visualAttrs.test(outerAttrs)) return null;
   const direction = /col|vertical|column/.test(flexMatch[1]) ? 'col' : 'row';
   // Walk inner with depth tracking, capture every depth-1 element
   const children = [];
@@ -1125,7 +1131,7 @@ program
 
 program
   .command('status')
-  .description('Check connection to Figma')
+  .description('Check connection to Figma (CDP) AND the local daemon')
   .action(() => {
     // Check if first run
     const config = loadConfig();
@@ -1135,6 +1141,22 @@ program
       return;
     }
     figmaUse('status');
+    // The CDP-side "Connected to Figma" line above only tells half the story.
+    // Most CLI commands (render, set-batch, eval …) need the LOCAL daemon
+    // running too. Surface its state right here so the user doesn't get a
+    // misleading green check while every subsequent command fails with
+    // "fetch failed".
+    const daemonInfo = isDaemonRunning(true);
+    if (daemonInfo && daemonInfo.running) {
+      console.log(chalk.green('  ✓ Daemon running') + chalk.gray(` (port ${DAEMON_PORT})`));
+    } else if (daemonInfo && daemonInfo.authFailed) {
+      console.log(chalk.yellow('  ⚠ Daemon running but token mismatch (auth failed).'));
+      console.log(chalk.gray('    Restart with:  figma-cli daemon restart'));
+    } else {
+      console.log(chalk.yellow('  ⚠ Daemon NOT running'));
+      console.log(chalk.gray('    Most commands (render, set-batch, eval) will fail with "fetch failed".'));
+      console.log(chalk.gray('    Start it with:  figma-cli daemon start'));
+    }
   });
 
 // ============ UNPATCH ============
@@ -6173,18 +6195,29 @@ program
       const vertical = options.direction === 'col' || options.direction === 'column' || options.direction === 'vertical';
 
       // Single daemon call for ALL frames (10x faster)
-      const results = await daemonExec('render-batch', {
+      let results = await daemonExec('render-batch', {
         jsxArray,
         gap,
         vertical,
         collection: options.collection || undefined,
       });
+      // Unwrap the wrapped form returned when there are unresolved vars.
+      let unresolvedVars = null;
+      if (results && !Array.isArray(results) && Array.isArray(results.frames)) {
+        unresolvedVars = results.unresolved;
+        results = results.frames;
+      }
 
       if (Array.isArray(results)) {
         results.forEach(r => {
           console.log(chalk.green('✓ Rendered: ' + r.id + (r.name ? ' (' + r.name + ')' : '')));
         });
         console.log(chalk.cyan(`\n${results.length} frames created`));
+        if (unresolvedVars && unresolvedVars.length > 0) {
+          console.log(chalk.yellow(`\n⚠ ${unresolvedVars.length} variable reference(s) could not be resolved:`));
+          console.log(chalk.yellow('  ' + unresolvedVars.join(', ')));
+          console.log(chalk.gray('  These bindings rendered as grey placeholders. Check `figma-cli var list` (optionally with --collection).'));
+        }
 
         if (options.asComponent) {
           const ids = results.map(r => r.id).filter(Boolean);
