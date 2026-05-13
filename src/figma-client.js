@@ -465,10 +465,18 @@ export class FigmaClient {
     // Generate code for each frame
     const framesCodes = parsed.map(({ props, children }, frameIdx) => {
       const name = props.name || 'Frame';
-      const hasExplicitWidth = props.w !== undefined || props.width !== undefined;
-      const width = props.w || props.width || 320;
-      const hasExplicitHeight = props.h !== undefined || props.height !== undefined;
-      const height = props.h || props.height || 200;
+      // "fill" / "hug" are sizing keywords that only make sense for nested
+      // elements under an auto-layout parent. At top-level there's no parent
+      // to fill against, so we ignore them and fall back to a sensible
+      // numeric default. Without this filter, `w="fill"` interpolated raw
+      // into `resize(fill, …)` → ReferenceError.
+      const isNumeric = v => v !== undefined && v !== 'fill' && v !== 'hug';
+      const rawW = isNumeric(props.w) ? props.w : isNumeric(props.width) ? props.width : undefined;
+      const rawH = isNumeric(props.h) ? props.h : isNumeric(props.height) ? props.height : undefined;
+      const hasExplicitWidth = rawW !== undefined;
+      const width = rawW !== undefined ? rawW : 320;
+      const hasExplicitHeight = rawH !== undefined;
+      const height = rawH !== undefined ? rawH : 200;
       const bg = props.bg || props.fill || null;
       const stroke = props.stroke || null;
       const rounded = props.rounded || props.radius || 0;

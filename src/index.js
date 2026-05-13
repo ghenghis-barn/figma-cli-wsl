@@ -115,6 +115,30 @@ function detectWrapperSplit(jsx) {
   }
   if (nonFrameChildSeen) return null;
   if (children.length < 2) return null;
+  // Don't split distinct-child composites. A real "N items in a row" pattern
+  // has children that share a base name (Button 1/2/3, Card A/B/C) or are
+  // structurally interchangeable. A composite has children with unrelated
+  // names (TabBar + Panel, Header + Body + Footer, Body + Close) — splitting
+  // would scatter the pieces. Heuristic: extract a base from each child's
+  // name=, strip trailing numbers/letters/slashes. If <50% share the same
+  // base, it's a composite — bail out.
+  const childNames = children.map(c => {
+    const m = c.match(/\bname\s*=\s*["']([^"']+)["']/);
+    return m ? m[1] : '';
+  });
+  // Strip a trailing differentiator that's clearly a sibling-index: requires
+  // a separator (space, dash, slash, underscore) before the suffix so that
+  // distinct names like "TabBar" / "Panel" stay distinct.
+  const bases = childNames.map(n => {
+    let b = n.replace(/[\s\-/_][A-Za-z0-9]+$/, ''); // "Button 1" → "Button", "Btn/Primary" → "Btn"
+    return (b || n).toLowerCase().trim();
+  });
+  // If children have more than one distinct base, this is a composite
+  // (TabBar + Panel, Header + Body + Footer, Body + Close) and splitting
+  // would scatter the design. Only allow split when EVERY child shares the
+  // same base name (the "N items" pattern).
+  const distinctBases = new Set(bases);
+  if (distinctBases.size > 1) return null;
   return { direction, children };
 }
 
