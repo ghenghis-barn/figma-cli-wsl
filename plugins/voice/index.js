@@ -206,8 +206,10 @@ const toolHandlers = {
     return runFigmaCliFallback(args, { timeout: 60000 });
   },
 
-  async figma_gradient_mesh({ colors, apply_to, size, base, blur, name }) {
+  async figma_gradient_mesh({ colors, style, seed, apply_to, size, base, blur, name }) {
     const args = ['gradient', 'mesh', colors];
+    if (style) args.push('--style', style);
+    if (seed != null) args.push('--seed', String(seed));
     if (apply_to) args.push('--apply-to', apply_to);
     if (size) args.push('--size', size);
     if (base) args.push('--base', base);

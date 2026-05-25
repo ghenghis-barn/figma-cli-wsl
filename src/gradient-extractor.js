@@ -368,70 +368,112 @@ function normalizeHex(h) {
   return rgbToHex(hexToRgb(h));
 }
 
-// Anchor positions (fx, fy, r) for N colors, ordered so palettes read
-// pleasantly. Positions sit just outside the frame so only the bleed shows.
-const MESH_LAYOUTS = {
-  2: [
-    { fx: -0.10, fy: -0.05, r: 0.70 },
-    { fx: 1.10, fy: 1.05, r: 0.70 },
-  ],
-  3: [
-    { fx: -0.10, fy: -0.05, r: 0.65 },
-    { fx: 1.10, fy: 0.10, r: 0.65 },
-    { fx: 0.50, fy: 1.10, r: 0.65 },
-  ],
-  4: [
-    { fx: -0.05, fy: -0.05, r: 0.55 },
-    { fx: 1.05, fy: -0.05, r: 0.55 },
-    { fx: -0.05, fy: 1.05, r: 0.55 },
-    { fx: 1.05, fy: 1.05, r: 0.55 },
-  ],
-  5: [
-    { fx: -0.05, fy: -0.05, r: 0.50 },
-    { fx: 1.05, fy: -0.05, r: 0.50 },
-    { fx: -0.05, fy: 1.05, r: 0.50 },
-    { fx: 1.05, fy: 1.05, r: 0.50 },
-    { fx: 0.50, fy: 0.50, r: 0.45 },
-  ],
-  6: [
-    { fx: -0.08, fy: 0.45, r: 0.50 },
-    { fx: 1.08, fy: 0.55, r: 0.50 },
-    { fx: -0.05, fy: -0.05, r: 0.45 },
-    { fx: 1.05, fy: -0.05, r: 0.45 },
-    { fx: -0.05, fy: 1.05, r: 0.45 },
-    { fx: 1.05, fy: 1.05, r: 0.45 },
-  ],
-};
+// Seeded RNG (mulberry32) so a wallpaper is reproducible with --seed but
+// varies run-to-run when no seed is given.
+function makeRng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-// Build the layout for arbitrary N (>6): corners first, then evenly spaced
-// points along the top and bottom edges.
-function meshLayoutForCount(n) {
-  if (MESH_LAYOUTS[n]) return MESH_LAYOUTS[n];
-  const pts = [
-    { fx: -0.05, fy: -0.05, r: 0.45 },
-    { fx: 1.05, fy: -0.05, r: 0.45 },
-    { fx: -0.05, fy: 1.05, r: 0.45 },
-    { fx: 1.05, fy: 1.05, r: 0.45 },
-  ];
-  const extra = n - 4;
-  for (let i = 0; i < extra; i++) {
-    const fx = (i + 1) / (extra + 1);
-    const fy = i % 2 === 0 ? -0.05 : 1.05;
-    pts.push({ fx, fy, r: 0.42 });
+export const MESH_STYLES = ['scatter', 'diagonal', 'bands', 'drift', 'spotlight', 'corners'];
+
+// Generate anchor positions for N colors in a given composition style.
+// Positions can sit slightly off-frame; the clip then shows only the soft
+// bleed. Each style jitters via rng() so repeated calls look distinct and
+// no blob is hard-locked to dead center.
+function meshPositions(n, style, rng) {
+  const jit = (base, amt) => base + (rng() - 0.5) * amt;
+  const r = (base, amt = 0.12) => Math.max(0.3, jit(base, amt));
+  const pts = [];
+
+  if (style === 'diagonal') {
+    const flip = rng() > 0.5;
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const fx = flip ? 1 - t : t;
+      pts.push({ fx: jit(fx, 0.28), fy: jit(t, 0.22), r: r(0.52, 0.16) });
+    }
+  } else if (style === 'bands') {
+    const horizontal = rng() > 0.5;
+    for (let i = 0; i < n; i++) {
+      const t = (i + 0.5) / n;
+      if (horizontal) pts.push({ fx: jit(0.5, 0.7), fy: jit(t, 0.12), r: r(0.55, 0.1) });
+      else pts.push({ fx: jit(t, 0.12), fy: jit(0.5, 0.7), r: r(0.55, 0.1) });
+    }
+  } else if (style === 'drift') {
+    // Cluster weighted toward one corner, trailing diagonally across.
+    const cx = rng() > 0.5 ? 0 : 1;
+    const cy = rng() > 0.5 ? 0 : 1;
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0 : i / (n - 1);
+      const fx = cx + (1 - 2 * cx) * t * 0.85;
+      const fy = cy + (1 - 2 * cy) * t * 0.85;
+      pts.push({ fx: jit(fx, 0.22), fy: jit(fy, 0.22), r: r(0.55 - t * 0.12, 0.12) });
+    }
+  } else if (style === 'spotlight') {
+    // One large off-center anchor + satellites ringed around the edges.
+    pts.push({ fx: jit(0.36, 0.28), fy: jit(0.4, 0.28), r: r(0.62, 0.1) });
+    const start = rng() * Math.PI * 2;
+    for (let i = 1; i < n; i++) {
+      const ang = start + (i / Math.max(1, n - 1)) * Math.PI * 2;
+      pts.push({ fx: jit(0.5 + Math.cos(ang) * 0.62, 0.16), fy: jit(0.5 + Math.sin(ang) * 0.62, 0.16), r: r(0.42, 0.12) });
+    }
+  } else if (style === 'corners') {
+    const corners = [[-0.05, -0.05], [1.05, -0.05], [-0.05, 1.05], [1.05, 1.05]];
+    for (let i = 0; i < n; i++) {
+      if (i < 4) pts.push({ fx: jit(corners[i][0], 0.12), fy: jit(corners[i][1], 0.12), r: r(0.52, 0.12) });
+      else pts.push({ fx: jit(0.5, 0.7), fy: jit(0.5, 0.7), r: r(0.4, 0.12) });
+    }
+  } else {
+    // scatter: spread across the canvas on a loose jittered grid, never
+    // dead-center, varied radii.
+    const cols = Math.ceil(Math.sqrt(n));
+    const rows = Math.ceil(n / cols);
+    for (let i = 0; i < n; i++) {
+      const gx = (i % cols + 0.5) / cols;
+      const gy = (Math.floor(i / cols) + 0.5) / rows;
+      pts.push({ fx: jit(gx, 0.5), fy: jit(gy, 0.5), r: r(0.46, 0.18) });
+    }
   }
-  return pts.slice(0, n);
+  return pts;
 }
 
 export function buildMeshFromColors(colors, opts = {}) {
   const hexes = colors.map(normalizeHex);
   if (hexes.length < 2) throw new Error('Need at least 2 colors for a mesh gradient.');
-  const layout = meshLayoutForCount(hexes.length);
-  const blobs = layout.map((pos, i) => ({ ...pos, color: hexes[i] }));
-  // Base = average of the palette, so any gaps between blobs read as a
-  // believable mid-tone rather than a flat default.
+
+  const seed = opts.seed != null ? (opts.seed >>> 0) : (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+  const rng = makeRng(seed);
+  let style = opts.style;
+  if (!style || style === 'auto') style = MESH_STYLES[Math.floor(rng() * MESH_STYLES.length)];
+  if (!MESH_STYLES.includes(style)) throw new Error(`Unknown style "${style}". One of: ${MESH_STYLES.join(', ')}, auto.`);
+
+  // Shuffle which color lands where so palette order doesn't dictate look.
+  const order = hexes.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+
+  const positions = meshPositions(hexes.length, style, rng);
+  const blobs = positions.map((pos, i) => ({
+    fx: Math.round(pos.fx * 1000) / 1000,
+    fy: Math.round(pos.fy * 1000) / 1000,
+    r: Math.round(pos.r * 1000) / 1000,
+    color: hexes[order[i % order.length]],
+  }));
+
   const base = opts.base ? normalizeHex(opts.base) : rgbToHex(averageColor(hexes.map(hexToRgb)));
   return {
     mode: 'mesh',
+    style,
+    seed,
     base,
     blobs,
     blurFraction: opts.blur != null ? opts.blur : 0.42,

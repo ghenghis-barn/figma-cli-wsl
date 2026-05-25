@@ -138,13 +138,22 @@
   },
   {
     "name": "figma_gradient_mesh",
-    "description": "Generate a mesh-gradient wallpaper from a color palette (no source image). Builds a smooth blob-blended background by stacking layer-blurred ellipses inside a clipping frame. Use when the user asks to create a wallpaper, mesh gradient, aurora/blossom-style background, or 'gradient from these colors'. Creates a new frame by default, or fills an existing frame with apply_to.",
+    "description": "Generate a mesh-gradient wallpaper from a color palette (no source image). Builds a smooth blob-blended background by stacking layer-blurred ellipses inside a clipping frame. Use when the user asks to create a wallpaper, mesh gradient, aurora/blossom-style background, or 'gradient from these colors'. Creates a new frame by default, or fills an existing frame with apply_to. When generating MULTIPLE wallpapers, vary the 'style' (or leave it 'auto') so each one looks different instead of all having a center blob.",
     "input_schema": {
       "type": "object",
       "properties": {
         "colors": {
           "type": "string",
           "description": "Comma-separated hex colors, 2 or more. Example: '#FF6B9D,#FEC860,#43E97B,#38A1DB,#A855F7'."
+        },
+        "style": {
+          "type": "string",
+          "enum": ["auto", "scatter", "diagonal", "bands", "drift", "spotlight", "corners"],
+          "description": "Composition layout. 'auto' (default) picks a random one each call. scatter=spread out, diagonal=flow corner-to-corner, bands=stripes, drift=clustered to one side, spotlight=one big off-center + satellites, corners=color in each corner."
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Random seed for a reproducible composition. Omit for a fresh random layout each call."
         },
         "apply_to": {
           "type": "string",

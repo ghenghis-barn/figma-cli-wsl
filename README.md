@@ -165,17 +165,29 @@ figma-cli both **generates** gradients from a palette and **extracts** them from
 No image needed — hand it a list of colors and it builds a smooth mesh-gradient wallpaper (heavily layer-blurred ellipses inside a clipping frame, distributed around the canvas):
 
 ```bash
-# New 1920x1080 wallpaper from a 5-color palette
+# New 1920x1080 wallpaper from a 5-color palette (random composition each run)
 figma-cli gradient mesh "#FF6B9D,#FEC860,#43E97B,#38A1DB,#A855F7"
 
-# Custom size + name, softer blend
-figma-cli gradient mesh "#0E0820,#FF1F8E,#00E5FF" --size 1200x700 --name "Cyberpunk" --blur 0.5
+# Pick a composition style + softer blend
+figma-cli gradient mesh "#0E0820,#FF1F8E,#00E5FF" --style diagonal --name "Cyberpunk" --blur 0.5
+
+# Reproduce an exact layout with a seed
+figma-cli gradient mesh "#2A3F6A,#FF6F3D,#A14ABE" --style spotlight --seed 42
 
 # Fill an existing frame instead of creating one
 figma-cli gradient mesh "#2A3F6A,#FF6F3D,#A14ABE" --apply-to 1:3
 ```
 
-2-6 colors get hand-tuned anchor layouts; more than 6 are distributed along the edges automatically. The base fill defaults to the palette average (override with `--base`).
+Composition styles (`--style`, default `auto` picks a random one each call so a batch of wallpapers all look different):
+
+- `scatter` — colors spread loosely across the canvas
+- `diagonal` — palette flows corner to corner
+- `bands` — soft horizontal or vertical stripes
+- `drift` — colors cluster to one side and trail off
+- `spotlight` — one large off-center anchor with satellites
+- `corners` — a color anchored in each corner
+
+Color-to-position assignment and per-blob jitter are seeded, so the same `--seed` reproduces a layout exactly while omitting it gives fresh variety. The base fill defaults to the palette average (override with `--base`).
 
 ### Extract a gradient from an image
 

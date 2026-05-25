@@ -3630,6 +3630,8 @@ gradient
   .option('--base <hex>', 'Base fill behind the blobs (default: palette average)')
   .option('--size <WxH>', 'Frame size for a new wallpaper', '1920x1080')
   .option('--blur <frac>', 'Blur radius as fraction of min(W, H). Default 0.42.')
+  .option('--style <style>', 'Composition: scatter|diagonal|bands|drift|spotlight|corners|auto', 'auto')
+  .option('--seed <n>', 'Random seed for reproducible composition (default: random each run)')
   .option('--name <name>', 'Name for the created frame', 'Mesh Wallpaper')
   .option('--json', 'Output JSON instead of human-readable')
   .action(async (colorsArg, options) => {
@@ -3639,6 +3641,8 @@ gradient
       recipe = buildMeshFromColors(colors, {
         base: options.base,
         blur: options.blur != null ? Math.max(0.05, Math.min(0.8, parseFloat(options.blur))) : undefined,
+        style: options.style,
+        seed: options.seed != null ? parseInt(options.seed, 10) : undefined,
       });
     } catch (e) {
       console.error(chalk.red(e.message));
@@ -3649,6 +3653,7 @@ gradient
       console.log();
       console.log(chalk.cyan('  Mesh wallpaper recipe'));
       console.log(chalk.gray('  ─────────────────────────────────────────'));
+      console.log(chalk.white(`  Style: `) + chalk.gray(`${recipe.style}  (seed ${recipe.seed})`));
       console.log(chalk.white(`  Base:  `) + chalk.gray(recipe.base));
       console.log(chalk.white(`  Blobs: `) + chalk.gray(`${recipe.blobs.length}, blur ${(recipe.blurFraction * 100).toFixed(0)}% of min side`));
       recipe.blobs.forEach((b, i) => {
