@@ -109,6 +109,60 @@ Prefer to keep everything on your machine? figma-ds-cli also works with **local 
 
 ---
 
+## Everything it can do
+
+**40+ ready components · 30+ capabilities · 8 areas.** You trigger any of these just by asking.
+
+**🧩 Components (40+ components + 3 tools)**
+- 40+ shadcn/ui components (buttons, cards, inputs, dialogs, tabs, calendar, sidebar, …) with real Lucide icons
+- Turn anything into a reusable **component** with **variants** (Size, State, …)
+- Build **slots** for flexible, composable components
+- Combine existing frames into a variant set
+
+**🎨 Design systems & tokens (4)**
+- One-command presets: **shadcn** (Light/Dark) and **Tailwind** color scales
+- **Import your own brand** from a `DESIGN.md` , colors, typography, radius become real Figma variables
+- **Switch a design between brands** (Stripe → Apple → your brand) , token names stay consistent
+- Visualize a whole palette on the canvas
+
+**🖼️ Visuals & effects (5)**
+- Drop shadows, inner shadows, layer & background blur, glassmorphism
+- Linear, radial, angular & diamond **gradients**
+- **Extract a gradient from any image** , get a Figma-ready fill or a mesh wallpaper
+- Generate **mesh-gradient wallpapers** from a color palette
+- Image fills from any URL, corner smoothing (iOS squircles), rotation, blend modes
+
+**📐 Layout & structure (4)**
+- Real auto-layout (flex rows/columns, fill/hug, gaps, alignment)
+- Pre-built **blocks** (full dashboards, page layouts) in one step
+- Precise absolute positioning (pin to corners, center, stretch)
+- Sections and layout grids to organize the canvas
+
+**♿ Accessibility (4)**
+- Contrast checking (WCAG)
+- Touch-target sizing, text-size checks
+- Color-blindness simulation
+- One-shot full a11y audit
+
+**📦 Handoff & export (4)**
+- Export **PNG, SVG, JSX**, Storybook stories, CSS variables, Tailwind config
+- Link components to **Storybook / GitHub / docs**
+- Inline **annotations** for usage rules and token references
+- Recreate a live webpage in Figma from a URL
+
+**🤖 Built for AI (5)**
+- Works with **Claude**, or local LLMs via **LM Studio / Ollama** (fully offline)
+- Ships the entire **Figma Plugin API spec offline** so the AI can self-discover
+- Self-corrects when a command needs a different approach
+- Screenshot-based verification so the AI checks its own work
+- Optional **voice control** (macOS): "create three pricing cards" out loud
+
+**🔒 No strings (2)**
+- No API key, no cloud roundtrip, no plugin store waits
+- Talks to Figma Desktop directly , real, editable Figma every time
+
+---
+
 ## For developers
 
 Everything above is powered by a CLI that the AI calls for you. If you want to use it directly, script it, or see every command:
