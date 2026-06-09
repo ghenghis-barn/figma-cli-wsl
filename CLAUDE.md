@@ -24,7 +24,9 @@ CLI that controls Figma Desktop directly. No API key needed.
 | "match this mesh / blossom / aurora background" | `figma-cli gradient extract <image> --mode mesh --apply-to <frameId>` |
 | "create a wallpaper / mesh gradient from these colors" | `figma-cli gradient mesh "#a,#b,#c" --size 1920x1080` |
 
-**Wallpaper palette tip:** for rich results pass **5-6 hue-diverse colors** (mix warm + cool + a bright accent), not shades of one color. Analogous palettes blend into a flat 2-tone wash. The command auto-adds a depth anchor + focal glow, and `--style auto` rotates compositions (scatter/diagonal/bands/drift/spotlight/corners). For N wallpapers, run it N times with different palettes + styles.
+**Wallpaper palette tip:** for rich results pass **5-6 hue-diverse colors** (mix warm + cool + a bright accent), not shades of one color. Analogous palettes blend into a flat 2-tone wash. The command auto-adds a depth anchor + focal glow, and `--style auto` rotates compositions (scatter/diagonal/bands/drift/spotlight/corners). For N wallpapers, run it N times with different palettes + styles. Add `--grain` for subtle film-grain NOISE or `--texture` for paper grain over the wallpaper.
+
+**Liquid glass tip (Apple-style):** Figma's native `GLASS` effect (`glass={true}`) reproduces the STATIC optics of Apple Liquid Glass — edge-lensing/refraction (`glassDepth`), specular highlight (`glassLight`/`glassLightAngle`), chromatic dispersion (`glassDispersion`) — but NOT the live material (no motion/scroll adaptation). To make it read as liquid (not frosted): keep `glassRadius` LOW (clear) + `glassDepth` HIGH (strong rim lensing) + put **sharp, detailed content BEHIND** the glass so the lensing is visible. Over a smooth gradient with nothing behind it, any glass looks frosted. Best demo = real UI over a photo-like background (e.g. an iOS Control Center: glass tiles over a vivid wallpaper).
 | "show all variants" | `figma-cli combos` |
 | "create size variants" | `figma-cli sizes --base small` |
 | "make these frames a variant set" / "combine into variants" | `figma-cli variants from <ids> --property Size --values Small,Medium,Large --name Button` |
@@ -237,6 +239,12 @@ roundedTL={8} roundedTR={8} roundedBL={0} roundedBR={0}
 cornerSmoothing={0.6}   // iOS squircle
 shadow="4px 4px 12px rgba(0,0,0,0.25)"
 blur={8}                overflow="hidden"       rotate={45}
+
+// Native Figma effects (NOISE / TEXTURE / progressive blur / liquid GLASS)
+noise="mono"            // film grain — also "duo"/"multi"; noiseDensity/noiseSize/noiseColor/noiseColor2/noiseOpacity
+texture={true}          // paper grain — textureSize/textureRadius/textureClip
+progressiveBlur={40}    // gradient blur — progressiveBlurDir="down|up|left|right"
+glass={true}            // Apple-style liquid glass — glassRefraction/glassDepth/glassRadius/glassDispersion/glassLight/glassLightAngle
 
 // Auto-Layout
 wrap={true}             // flow to next row (HORIZONTAL only)

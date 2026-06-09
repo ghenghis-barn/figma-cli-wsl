@@ -343,6 +343,8 @@ node src/index.js run /tmp/script.js
 
 **Effects:** `shadow="0 4 12 #0001"`, `blur={10}`, `rotate={45}`
 
+**Native effects:** `noise="mono|duo|multi"` (grain), `texture={true}` (paper grain), `progressiveBlur={40}` (`progressiveBlurDir=down|up|left|right`), `glass={true}` (liquid glass: `glassRefraction`/`glassDepth`/`glassRadius`/`glassDispersion`/`glassLight`/`glassLightAngle`). Wallpapers: `gradient mesh "<colors>" --grain|--texture`.
+
 **Text:** `<Text size={18} weight="bold" color="#000" font="Inter">Hello</Text>`
 
 **WRONG vs RIGHT:**

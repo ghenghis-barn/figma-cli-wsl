@@ -3633,6 +3633,8 @@ gradient
   .option('--base <hex>', 'Base fill behind the blobs (default: palette average)')
   .option('--size <WxH>', 'Frame size for a new wallpaper', '1920x1080')
   .option('--blur <frac>', 'Blur radius as fraction of min(W, H). Default 0.42.')
+  .option('--grain [intensity]', 'Add film-grain NOISE over the wallpaper (0-1 density, default 0.18)')
+  .option('--texture', 'Add a paper TEXTURE grain over the wallpaper')
   .option('--style <style>', 'Composition: scatter|diagonal|bands|drift|spotlight|corners|auto', 'auto')
   .option('--seed <n>', 'Random seed for reproducible composition (default: random each run)')
   .option('--name <name>', 'Name for the created frame', 'Mesh Wallpaper')
@@ -3712,6 +3714,17 @@ gradient
           e.effects = [{ type:'LAYER_BLUR', radius: Math.round(__blur * (b.blurMul || 1)), visible: true }];
           __target.appendChild(e);
         }
+        ${(() => {
+          const fx = [];
+          if (options.grain) {
+            const dens = (options.grain === true) ? 0.18 : Math.max(0, Math.min(1, parseFloat(options.grain)));
+            fx.push(`{type:'NOISE',noiseType:'MONOTONE',density:${dens},noiseSize:1.2,color:{r:0,g:0,b:0,a:1},visible:true}`);
+          }
+          if (options.texture) {
+            fx.push(`{type:'TEXTURE',noiseSize:12,radius:24,clipToShape:true,visible:true}`);
+          }
+          return fx.length ? `__target.effects = [${fx.join(',')}];` : '';
+        })()}
         figma.viewport.scrollAndZoomIntoView([__target]);
         return JSON.stringify({ id: __target.id, name: __target.name, blobs: __blobs.length, blur: __blur, w: W, h: H });
       })()
@@ -6469,7 +6482,9 @@ program
       // - gradient/effects/blur (needs full parser, fast-path doesn't handle them)
       if (jsx.includes('var:') || jsx.includes('<Slot') || jsx.includes('<Icon') ||
           /-gradient\s*\(/i.test(jsx) || jsx.includes('shadow=') || jsx.includes('innerShadow=') ||
-          jsx.includes('blur=') || jsx.includes('bgBlur=') || jsx.includes('image=')) {
+          jsx.includes('blur=') || jsx.includes('bgBlur=') || jsx.includes('image=') ||
+          jsx.includes('noise=') || jsx.includes('texture=') || jsx.includes('progressiveBlur=') ||
+          jsx.includes('glass=')) {
         const { FigmaClient } = await import('./figma-client.js');
         const client = new FigmaClient();
         if (options.collection) client.setCollection(options.collection);

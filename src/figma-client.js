@@ -1826,6 +1826,10 @@ export class FigmaClient {
    *   innerShadow="0 2px 4px #00000040"     — INNER_SHADOW
    *   blur={4}                               — LAYER_BLUR
    *   bgBlur={8}                             — BACKGROUND_BLUR
+   *   noise="mono|duo|multi"                 — NOISE grain (noiseDensity/noiseSize/noiseColor/noiseColor2/noiseOpacity)
+   *   texture={true}                         — TEXTURE grain (textureSize/textureRadius/textureClip)
+   *   progressiveBlur={40}                   — PROGRESSIVE blur (progressiveBlurDir=down|up|left|right)
+   *   glass={true}                           — liquid GLASS (glassRefraction/glassDepth/glassRadius/glassDispersion/glassLight/glassLightAngle)
    * Multiple effects accumulate.
    */
   generateEffectsCode(props, elementVar) {
@@ -1852,8 +1856,75 @@ export class FigmaClient {
       const r = Number(props.bgBlur);
       if (Number.isFinite(r) && r > 0) effects.push({ type: 'BACKGROUND_BLUR', radius: r });
     }
+    // Grain/noise overlay (NOISE effect). noise="mono|duo|multi" (mono default).
+    //   noiseDensity={0..1} noiseSize={n} noiseColor="#hex" noiseColor2="#hex"(duo) noiseOpacity={0..1}(multi)
+    if (props.noise !== undefined && props.noise !== null && props.noise !== 'false' && props.noise !== false) {
+      const nv = String(props.noise).toLowerCase();
+      let noiseType = 'MONOTONE';
+      if (nv.startsWith('duo')) noiseType = 'DUOTONE';
+      else if (nv.startsWith('multi')) noiseType = 'MULTITONE';
+      const c = this.hexToRgb(props.noiseColor || '#000000') || { r: 0, g: 0, b: 0 };
+      const eff = {
+        type: 'NOISE', noiseType,
+        density: props.noiseDensity !== undefined ? Number(props.noiseDensity) : 0.4,
+        noiseSize: props.noiseSize !== undefined ? Number(props.noiseSize) : 1.5,
+        color: { r: c.r, g: c.g, b: c.b, a: 1 }, visible: true,
+      };
+      if (noiseType === 'DUOTONE') {
+        const c2 = this.hexToRgb(props.noiseColor2 || '#ffffff') || { r: 1, g: 1, b: 1 };
+        eff.secondaryColor = { r: c2.r, g: c2.g, b: c2.b, a: 1 };
+      } else if (noiseType === 'MULTITONE') {
+        eff.opacity = props.noiseOpacity !== undefined ? Number(props.noiseOpacity) : 0.5;
+      }
+      effects.push({ _raw: eff });
+    }
+    // Paper/grain TEXTURE effect. texture={true} textureSize={n} textureRadius={n} textureClip={bool}
+    if (props.texture !== undefined && props.texture !== null && props.texture !== 'false' && props.texture !== false) {
+      effects.push({ _raw: {
+        type: 'TEXTURE',
+        noiseSize: props.textureSize !== undefined ? Number(props.textureSize) : 12,
+        radius: props.textureRadius !== undefined ? Number(props.textureRadius) : 30,
+        clipToShape: !(props.textureClip === 'false' || props.textureClip === false),
+        visible: true,
+      } });
+    }
+    // Progressive (gradient) blur. progressiveBlur={endRadius} progressiveBlurDir="down|up|left|right"
+    if (props.progressiveBlur !== undefined && props.progressiveBlur !== null) {
+      const r = Number(props.progressiveBlur);
+      if (Number.isFinite(r) && r > 0) {
+        const dir = String(props.progressiveBlurDir || 'down').toLowerCase();
+        const O = {
+          down:  { s: { x: 0.5, y: 0 }, e: { x: 0.5, y: 1 } },
+          up:    { s: { x: 0.5, y: 1 }, e: { x: 0.5, y: 0 } },
+          right: { s: { x: 0, y: 0.5 }, e: { x: 1, y: 0.5 } },
+          left:  { s: { x: 1, y: 0.5 }, e: { x: 0, y: 0.5 } },
+        };
+        const o = O[dir] || O.down;
+        effects.push({ _raw: {
+          type: 'LAYER_BLUR', blurType: 'PROGRESSIVE', radius: r,
+          startRadius: props.progressiveBlurStart !== undefined ? Number(props.progressiveBlurStart) : 0,
+          startOffset: o.s, endOffset: o.e, visible: true,
+        } });
+      }
+    }
+    // Liquid GLASS effect. glass={true} glassRefraction/glassDepth/glassRadius/glassDispersion/glassLight/glassLightAngle
+    if (props.glass !== undefined && props.glass !== null && props.glass !== 'false' && props.glass !== false) {
+      // Defaults tuned for Apple-style "Liquid Glass": clear (low radius) with
+      // strong edge lensing (high depth) + chromatic dispersion. For a frosted
+      // look instead, pass a high glassRadius (e.g. 30) and lower glassDepth.
+      effects.push({ _raw: {
+        type: 'GLASS', visible: true,
+        refraction: props.glassRefraction !== undefined ? Number(props.glassRefraction) : 0.95,
+        depth: props.glassDepth !== undefined ? Number(props.glassDepth) : 50,
+        radius: props.glassRadius !== undefined ? Number(props.glassRadius) : 6,
+        dispersion: props.glassDispersion !== undefined ? Number(props.glassDispersion) : 0.4,
+        lightIntensity: props.glassLight !== undefined ? Number(props.glassLight) : 0.7,
+        lightAngle: props.glassLightAngle !== undefined ? Number(props.glassLightAngle) : 130,
+      } });
+    }
     if (effects.length === 0) return '';
     const figmaEffects = effects.map(e => {
+      if (e._raw) return JSON.stringify(e._raw);
       if (e.type === 'DROP_SHADOW' || e.type === 'INNER_SHADOW') {
         return `{type:'${e.type}',color:{r:${e.color.r},g:${e.color.g},b:${e.color.b},a:${e.color.a}},offset:{x:${e.x},y:${e.y}},radius:${e.blur},spread:0,visible:true,blendMode:'NORMAL'}`;
       }

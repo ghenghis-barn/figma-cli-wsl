@@ -1,6 +1,6 @@
 # Figma Plugin API — Index
 
-Generated 2026-05-24 from docs/figma-api/.
+Generated 2026-06-09 from docs/figma-api/.
 Total: 203 interfaces, 99 type aliases.
 
 ## Interfaces
