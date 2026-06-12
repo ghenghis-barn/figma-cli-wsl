@@ -210,3 +210,16 @@ test('structure section contains untruncated page trees', () => {
   assert.match(md, /### Page: Buttons/);
   assert.match(md, /\*\*Primary\*\* · `COMPONENT` · 71×32/);
 });
+
+import { estimateStructureTokens } from '../src/design-extract.js';
+
+test('estimateStructureTokens returns a positive token estimate', () => {
+  const tokens = estimateStructureTokens(FIXTURE_PAGES);
+  assert.ok(tokens > 10, `expected >10, got ${tokens}`);
+  assert.ok(tokens < 1000, `fixture is small, got ${tokens}`);
+});
+
+test('estimateStructureTokens skips errored pages and handles empty input', () => {
+  assert.equal(estimateStructureTokens([]), 0);
+  assert.equal(estimateStructureTokens([{ id: 'x', name: 'E', error: 'boom' }]), 0);
+});

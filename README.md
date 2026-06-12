@@ -103,6 +103,7 @@ Just say it in plain language. A few examples:
 **Bring your own brand**
 - "Import this design system" *(point it at a `DESIGN.md` file , see below)*
 - "Switch this design from Stripe to Apple." *(swap a whole layout between brands)*
+- "Export this file's design system as markdown." *(any open file → `DESIGN.md` , see below)*
 
 **Polish & hand off**
 - "Check the color contrast / touch targets / text sizes."
@@ -120,6 +121,25 @@ Have a brand or a design system? Put it in a single `DESIGN.md` file (colors, ty
 > "Import ~/Downloads/my-DESIGN.md into Figma."
 
 It creates real Figma variables (`primary`, `canvas`, `ink`, `accent`, …) you can use everywhere , and you can switch a design between systems on demand ("now make it look like Vercel"). Ready-made `DESIGN.md` files for popular brands work too.
+
+---
+
+## Export any Figma file as DESIGN.md
+
+The reverse also works. Open any Figma file , yours, a client's, a Community file like GitHub's Primer , and say:
+
+> "Export the design system as markdown."
+
+figma-ds-cli scans **every page** (no truncation, even on 100k+ node files) and writes a `DESIGN.md` with the full token map: colors ranked by usage, the type scale, spacing, radii, shadows, plus a variant matrix for every component set (e.g. Button: variant × size × state, with all values). The file round-trips , `figma-cli import` reads it back into variables in any other file.
+
+What it's for:
+
+- **Feed your design system to AI tools** , Claude, Cursor, Copilot read DESIGN.md and build UI that actually matches your Figma file
+- **Document a design system** , one command instead of hand-written token tables
+- **Transfer tokens between files** , extract from file A, import into file B
+- **Learn from Community files** , extract Primer, Material or any public system and see exactly how it's built
+
+Huge files stay usable: when the structure trees alone would blow an AI context window, they're split into per-page files automatically and the main DESIGN.md stays small enough to load whole (Primer Web: 67 pages, 124k nodes → a 35k-token main file).
 
 ---
 

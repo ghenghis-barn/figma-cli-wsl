@@ -188,7 +188,9 @@ figma-cli var delete-all -c "primitives"  # Only specific collection
 
 - Default = ALL pages, ALL sections. Use `--pages "Button,ActionMenu"` (substring
   match) or `--selection` to scope; `--sections tokens` for tokens-only.
-- `--split` additionally writes full per-page trees to `DESIGN-structure/`.
+- **Auto-split:** when the structure trees alone exceed ~50k tokens (huge files
+  like Primer Web), they move to `DESIGN-structure/` automatically and the main
+  file stays AI-context-sized. `--split` forces this, `--no-split` prevents it.
 - Users speak naturally ("export the design system as markdown") — map intent
   to flags, never make them memorize commands.
 - After extraction, summarize what was captured (pages, token counts, skipped

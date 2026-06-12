@@ -504,3 +504,23 @@ export function generatePageStructureMd(page) {
   for (const frame of page.frames) out.push(...formatTree(frame, 0));
   return out.join('\n');
 }
+
+/** ~3.8 chars per token is a good markdown estimate. */
+const CHARS_PER_TOKEN = 3.8;
+
+/**
+ * Estimated LLM token cost of the Structure section for these pages.
+ * Used by the extract command to auto-split oversized files: above the
+ * threshold the structure trees move to DESIGN-structure/ so the main
+ * DESIGN.md stays loadable in one AI context.
+ */
+export function estimateStructureTokens(pages) {
+  let chars = 0;
+  for (const page of pages) {
+    if (page.error) continue;
+    for (const frame of page.frames || []) {
+      chars += formatTree(frame, 0).join('\n').length + 1;
+    }
+  }
+  return Math.round(chars / CHARS_PER_TOKEN);
+}

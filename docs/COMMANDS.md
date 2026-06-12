@@ -116,12 +116,21 @@ figma-cli extract --selection
 figma-cli extract --sections tokens
 figma-cli extract --sections color,typography,tokens
 
-# Also write full per-page trees to DESIGN-structure/ alongside the main file
+# Force full per-page trees into DESIGN-structure/ alongside the main file
 figma-cli extract --split
+
+# Force one big file, even for huge documents
+figma-cli extract --no-split
 
 # Flags can combine
 figma-cli extract output.md --pages "Icons" --sections structure,tokens --split
 ```
+
+**Auto-split:** without either flag, extract estimates the token cost of the
+Structure section. Above ~50k tokens (huge files — Primer Web's structure alone
+is ~185k) the per-page trees are written to `DESIGN-structure/` automatically
+and the main DESIGN.md keeps everything else, staying small enough (~35k tokens
+for Primer) to load into a single AI context.
 
 Re-import the output at any time:
 

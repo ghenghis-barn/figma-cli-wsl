@@ -5,10 +5,14 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { program, checkConnection, fastEval } from '../lib/cli-core.js';
 import {
-  listPagesCode, walkerCode, generateDesignMd, generatePageStructureMd, ALL_SECTIONS,
+  listPagesCode, walkerCode, generateDesignMd, generatePageStructureMd,
+  estimateStructureTokens, ALL_SECTIONS,
 } from '../design-extract.js';
 
 const DEPTH_FLOOR = 3;
+// Structure trees above this estimated token count get auto-split into
+// DESIGN-structure/ so the main DESIGN.md stays loadable in one AI context.
+const AUTO_SPLIT_TOKENS = 50_000;
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'page';
 
@@ -33,6 +37,7 @@ program
   .option('--pages <list>', 'only pages whose name matches one of these (comma list, case-insensitive substring)')
   .option('--selection', 'only the currently selected nodes (overrides --pages)')
   .option('--split', 'additionally write full per-page trees to DESIGN-structure/')
+  .option('--no-split', 'never auto-split, even for huge files (one big DESIGN.md)')
   .action(async (output, options) => {
     await checkConnection();
     const outPath = resolve(output || 'DESIGN.md');
@@ -111,11 +116,32 @@ program
         date: new Date().toISOString().slice(0, 10),
         pages: results,
       };
-      const md = generateDesignMd(extraction, { sections });
+
+      // Auto-split: when the structure trees alone would blow any AI context
+      // window, move them to DESIGN-structure/ and keep the main file lean.
+      // options.split is true (--split), false (--no-split) or undefined (auto).
+      const wantsStructure = !sections || sections.includes('structure');
+      let autoSplit = false;
+      let structTokens = 0;
+      if (options.split === undefined && wantsStructure) {
+        structTokens = estimateStructureTokens(results);
+        autoSplit = structTokens > AUTO_SPLIT_TOKENS;
+      }
+      const doSplit = options.split === true || autoSplit;
+
+      let mainSections = sections;
+      if (autoSplit) {
+        // Slim main file: drop the structure section, note where it went.
+        mainSections = (sections || ALL_SECTIONS).filter(s => s !== 'structure');
+      }
+      let md = generateDesignMd(extraction, { sections: mainSections });
+      if (autoSplit) {
+        md = md.replace('-->\n', `-->\n\n> **Structure trees auto-split** (~${Math.round(structTokens / 1000)}k tokens — too large for one AI context): per-page trees are in \`DESIGN-structure/\`. Use \`--no-split\` to force a single file.\n`);
+      }
       writeFileSync(outPath, md);
 
       const written = [outPath];
-      if (options.split) {
+      if (doSplit) {
         const splitDir = join(dirname(outPath), 'DESIGN-structure');
         mkdirSync(splitDir, { recursive: true });
         for (const page of results) {
@@ -128,7 +154,8 @@ program
       const failed = results.filter(r => r.error);
       const totalNodes = results.reduce((a, p) => a + (p.nodeCount || 0), 0);
       spinner.succeed(`Extracted ${results.length} page(s), ${totalNodes} nodes → ${outPath}`);
-      if (options.split) console.log(chalk.gray(`  + ${results.length} structure file(s) in DESIGN-structure/`));
+      if (autoSplit) console.log(chalk.gray(`  Structure (~${Math.round(structTokens / 1000)}k tokens) auto-split into DESIGN-structure/ — main file stays AI-context-sized (--no-split to override)`));
+      else if (doSplit) console.log(chalk.gray(`  + ${results.length} structure file(s) in DESIGN-structure/`));
       if (failed.length) {
         console.log(chalk.yellow(`  ⚠ ${failed.length} page(s) skipped:`));
         for (const f of failed) console.log(chalk.yellow(`    - ${f.name}: ${f.error}`));
