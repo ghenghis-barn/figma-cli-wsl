@@ -98,3 +98,26 @@ test('tailwind: borderRadius/spacing rem→px, fontFamily, fontSize tuples', asy
 test('tailwind: unloadable config throws a helpful error', async () => {
   await assert.rejects(() => parseTailwindConfig('/nonexistent/tailwind.config.js'), /load|find/i);
 });
+
+import { parseStorybookIndex, fetchStorybookIndex } from '../src/code-import/storybook.js';
+
+test('storybook: groups stories by component, skips docs entries', () => {
+  const { meta } = parseStorybookIndex(fixture('storybook-index.json'));
+  assert.equal(meta.components.length, 2);
+  const button = meta.components.find(c => c.name === 'Button');
+  assert.deepEqual(button.variants, ['Primary', 'Secondary']);
+  assert.equal(button.category, 'Components');
+});
+
+test('storybook: produces empty tokens (index.json has none)', () => {
+  const { tokens } = parseStorybookIndex(fixture('storybook-index.json'));
+  assert.equal(Object.keys(tokens.color).length, 0);
+});
+
+test('storybook: v6 stories.json shape also parses', () => {
+  const v6 = JSON.stringify({ v: 3, stories: {
+    'button--primary': { id: 'button--primary', title: 'Button', name: 'Primary', kind: 'Button' },
+  } });
+  const { meta } = parseStorybookIndex(v6);
+  assert.equal(meta.components[0].name, 'Button');
+});
