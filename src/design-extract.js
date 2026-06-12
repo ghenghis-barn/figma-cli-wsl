@@ -82,6 +82,7 @@ export function walkerCode(pageId, { maxDepth = 8, textLimit = 80 } = {}) {
     };
     const page = await figma.getNodeByIdAsync(${JSON.stringify(String(pageId))});
     if (!page) return JSON.stringify({ error: 'page not found' });
+    if (typeof page.loadAsync === 'function') await page.loadAsync();
     let visited = 0;
     const count = (n) => { visited++; if ('children' in n) n.children.forEach(count); };
     count(page);

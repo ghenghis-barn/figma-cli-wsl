@@ -25,3 +25,10 @@ test('walkerCode defaults: depth 8, text 80', () => {
 test('listPagesCode is valid JS', () => {
   assert.doesNotThrow(() => new Function(`return ${listPagesCode()}`));
 });
+
+test('walkerCode loads the page before reading children (dynamic-page mode)', () => {
+  const code = walkerCode('1:1');
+  assert.match(code, /loadAsync/);
+  // loadAsync must appear BEFORE the first children access
+  assert.ok(code.indexOf('loadAsync') < code.indexOf('count(page)'));
+});
