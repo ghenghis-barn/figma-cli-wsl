@@ -40,3 +40,36 @@ test('w3c: cyclic aliases throw a clear error', () => {
 test('w3c: invalid JSON throws with context', () => {
   assert.throws(() => parseW3cTokens('not json'), /JSON/);
 });
+
+import { parseCss } from '../src/code-import/css.js';
+
+test('css: shadcn bare HSL triples become hex colors', () => {
+  const { tokens } = parseCss(fixture('shadcn-globals.css'));
+  assert.equal(tokens.color['background'], '#ffffff');
+  assert.match(tokens.color['primary'], /^#[0-9a-f]{6}$/);
+});
+
+test('css: hex passthrough and var() reference resolution', () => {
+  const { tokens } = parseCss(fixture('shadcn-globals.css'));
+  assert.equal(tokens.color['brand'], '#0969da');
+  assert.equal(tokens.color['ref'], '#0969da');
+});
+
+test('css: radius-named rem values become px radius tokens', () => {
+  const { tokens } = parseCss(fixture('shadcn-globals.css'));
+  assert.equal(tokens.radius['radius'], 8);
+});
+
+test('css: .dark block values are skipped in v1 (first definition wins)', () => {
+  const { tokens } = parseCss(fixture('shadcn-globals.css'));
+  assert.equal(tokens.color['background'], '#ffffff'); // not the .dark value
+});
+
+test('css: tailwind v4 @theme — color-/radius-/spacing-/font- prefixes', () => {
+  const { tokens } = parseCss(fixture('tailwind-v4-theme.css'));
+  assert.match(tokens.color['primary'], /^#[0-9a-f]{6}$/);   // oklch converted
+  assert.equal(tokens.color['surface'], '#f6f8fa');           // rgb() converted
+  assert.equal(tokens.radius['radius-md'], 6);
+  assert.equal(tokens.spacing['spacing-gutter'], 24);
+  assert.deepEqual(tokens.fonts, ['Inter']);
+});
