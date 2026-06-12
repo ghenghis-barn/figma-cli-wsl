@@ -68,7 +68,7 @@ program
         const proseColorRows = (content.match(/\*\*[^*]+\*\*\s*\(`#[0-9a-fA-F]{3,8}`\)\s*:/g) || []).length;
         const isDesignMd = hasFrontmatterTokens || hasJsonBlock || proseColorRows >= 3;
 
-        if (isDesignMd && !options.type) {
+        if ((isDesignMd && !options.type) || options.type === 'designmd') {
           // Existing DESIGN.md path — forward unchanged.
           const args = ['tokens', 'import-design-md', source];
           if (options.collection) args.push('-c', options.collection);
