@@ -117,6 +117,35 @@ figma-ds-cli talks to your Figma Desktop in one of two ways. Claude picks one du
 
 ---
 
+## figma-cli vs the MCP servers (the question I get asked most)
+
+People keep asking how figma-cli differs from **Figma's official MCP** and from **figma-console-mcp**. Short version: they talk to Figma through the **cloud REST API**, figma-cli talks to **Figma Desktop directly on your machine**. That one architectural choice changes everything downstream.
+
+| | **figma-cli** | Figma official MCP / figma-console-mcp |
+|---|---|---|
+| **How it connects** | CDP → your local Figma Desktop | Figma REST API (cloud) |
+| **Figma token** | not needed | required (`figd_…`) |
+| **Figma rate limit** | **none** — there are no API calls to throttle | yes — heavy AI use hits the "upgrade your plan" wall |
+| **Works offline** | yes | no |
+| **Setup** | one `connect` command | token + plugin/bridge + (for some) port wrangling |
+
+### Why "no rate limit" is a real, structural advantage
+Figma's API has rate limits, and on Free/Starter plans they're tight. Any tool built on that API (Figma's own MCP included) **will** hit them under heavy AI use — it's their architecture, not a bug they can patch. figma-cli sidesteps it entirely because it never calls the API.
+
+### The quieter advantage: it costs your AI far fewer tokens
+figma-cli's commands are terse and there are **no large tool schemas loaded into the AI's context**. Driving an MCP server, by contrast, loads its instructions + dozens of tool schemas and returns verbose JSON. Measured like-for-like in one session (tokens ≈ bytes ÷ 4, approximate):
+
+| Task | figma-cli | API-based MCP |
+|---|---:|---:|
+| Cold start → first component | **~140 tok** | ~1,600 tok (**~11×**) |
+| Generate one token-bound component | **~68 tok** | ~256–556 tok (**~4–8×**) |
+
+On a fixed AI plan (e.g. Claude Pro), fewer tokens per task means you get more done before hitting *your AI's* usage limits too — and a leaner context means the AI keeps its facts straight instead of "forgetting" node IDs as the window fills.
+
+**Bottom line:** local, no token, no rate limit, no cloud round-trip, and the lowest token cost — built for fast, reliable building and verifying from Claude Code or Cursor.
+
+---
+
 ## What you can ask for
 
 Just say it in plain language. A few examples:
