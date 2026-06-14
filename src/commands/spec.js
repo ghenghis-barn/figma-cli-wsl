@@ -37,18 +37,34 @@ function locateDesignMd(explicit) {
   return null;
 }
 
-// Measure a built node for conformance: type, variant property names, and each
-// variant's name + size. Compact by design.
-function measureCode(nodeId) {
+// Measure a built node for conformance: type, variant property names, each
+// variant's name + size, and a DEEP tree (layout/gap/padding/children) of the
+// variant that matches the spec sample — so every md instruction can be checked.
+function measureCode(nodeId, sampleName) {
   return `(async () => {
     const n = await figma.getNodeByIdAsync(${JSON.stringify(nodeId)});
     if (!n) return { error: 'node not found' };
+    const tree = (node, depth) => {
+      const o = { name: node.name, type: node.type, w: Math.round(node.width || 0), h: Math.round(node.height || 0) };
+      if ('layoutMode' in node && node.layoutMode !== 'NONE') {
+        o.lm = node.layoutMode;
+        o.gap = node.itemSpacing || 0;
+        o.pad = [node.paddingTop, node.paddingRight, node.paddingBottom, node.paddingLeft];
+      }
+      if (depth > 0 && 'children' in node && node.children.length) o.children = node.children.map(c => tree(c, depth - 1));
+      return o;
+    };
+    const norm = s => String(s).replace(/\\s+/g, '').toLowerCase().split(',').sort().join(',');
     const out = { type: n.type, name: n.name };
     if (n.type === 'COMPONENT_SET') {
       out.variantProps = Object.keys(n.variantGroupProperties || {});
       out.variants = n.children.map(c => ({ name: c.name, w: Math.round(c.width), h: Math.round(c.height) }));
+      const want = ${JSON.stringify(sampleName || '')};
+      const match = want ? n.children.find(c => norm(c.name) === norm(want)) : n.children[0];
+      if (match) out.sampleTree = tree(match, 6);
     } else {
       out.variants = [{ name: n.name, w: Math.round(n.width || 0), h: Math.round(n.height || 0) }];
+      out.sampleTree = tree(n, 6);
     }
     return out;
   })()`;
@@ -82,7 +98,9 @@ program
         console.log(axisLines.join('\n'));
       }
       if (spec.sample) {
-        console.log(chalk.gray(`sample: ${spec.sample.name} → ${spec.sample.w}×${spec.sample.h}${spec.sample.padding ? ` padding ${spec.sample.padding}` : ''}`));
+        const s = spec.sample;
+        const meta = [s.lm === 'HORIZONTAL' ? 'row' : s.lm === 'VERTICAL' ? 'col' : null, s.gap != null ? `gap ${s.gap}` : null, s.pad ? `pad ${s.pad.join('/')}` : null, s.children?.length ? `${s.children.length} children` : null].filter(Boolean).join(', ');
+        console.log(chalk.gray(`sample: ${s.name} → ${s.w}×${s.h}${meta ? ` (${meta})` : ''}`));
       }
       console.log(chalk.gray(`\nbuild to this, then enforce: figma-cli spec "${spec.name}" --check <nodeId>`));
       // Also emit JSON on the last line for programmatic use.
@@ -92,7 +110,7 @@ program
 
     // Check mode — measure + enforce. Hard rule: exit 1 on any violation.
     await checkConnection();
-    let measured = await fastEval(measureCode(options.check));
+    let measured = await fastEval(measureCode(options.check, spec.sample ? spec.sample.name : ''));
     if (typeof measured === 'string') { try { measured = JSON.parse(measured); } catch {} }
     if (!measured || measured.error) {
       console.error(chalk.red('✗ Could not measure node:'), measured?.error || 'unknown');
