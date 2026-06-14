@@ -119,26 +119,55 @@ function typeClass(t) {
 const normName = s => String(s).replace(/\s+/g, '').toLowerCase().split(',').sort().join(',');
 const sameArr = (a, b) => Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((v, i) => v === b[i]);
 
+// The height a node MUST be to physically hold its (auto-laid-out) children,
+// computed recursively so non-physical dims cascade up: a horizontal row
+// inherits the unreliable height of a vertical child that's too short for ITS
+// children. Leaves trust their stated height.
+function physicalMinHeight(node) {
+  const padV = node.pad ? (node.pad[0] + node.pad[2]) : 0;
+  if (!node.lm || !node.children?.length) return node.h ?? 0;
+  const kids = node.children.map(physicalMinHeight);
+  if (node.lm === 'VERTICAL') return kids.reduce((a, b) => a + b, 0) + (node.gap || 0) * (node.children.length - 1) + padV;
+  return Math.max(...kids) + padV;   // HORIZONTAL: height = tallest child + pad
+}
+
+// True when a spec node's stated height can't physically contain its children
+// (a Primer instance-overlap artifact, e.g. a 20px group with 2×20px children,
+// or a row inheriting that). Such dims are unreliable → check becomes a hint.
+function nonPhysicalHeight(specN) {
+  if (specN.h == null || !specN.lm || !specN.children?.length) return false;
+  return specN.h + 1 < physicalMinHeight(specN);
+}
+
 // Deep-compare a built node tree against a spec node tree, pushing one rule per
-// enforced instruction. Only properties the md actually carries are enforced.
+// instruction. rule.warn = advisory (doesn't fail the build): composition hints
+// and non-physical Primer dims. Everything else is a hard rule.
 function compareNode(specN, builtN, path, rules, tol) {
   const at = path || specN.name;
 
-  // type family
-  rules.push({
-    ok: typeClass(specN.type) === typeClass(builtN.type),
-    msg: typeClass(specN.type) === typeClass(builtN.type)
-      ? `type[${at}]: ${typeClass(builtN.type)}`
-      : `type[${at}]: spec wants ${specN.type} (${typeClass(specN.type)}), built ${builtN.type} (${typeClass(builtN.type)})`,
-  });
+  // type family. A spec INSTANCE (a sub-component) built as a raw text/shape is
+  // a composition HINT, not a failure — and we stop checking this node's
+  // internals (a raw substitute legitimately can't carry the instance's own
+  // layout/gap/children). "Instance the component" is the only advice needed.
+  const classMatch = typeClass(specN.type) === typeClass(builtN.type);
+  if (!classMatch && specN.type === 'INSTANCE') {
+    rules.push({ ok: false, warn: true, msg: `compose[${at}]: spec uses an instance of "${specN.name}" — built raw ${builtN.type}. Consider instancing that component for fidelity.` });
+    return;
+  }
+  if (classMatch) {
+    rules.push({ ok: true, msg: `type[${at}]: ${typeClass(builtN.type)}` });
+  } else {
+    rules.push({ ok: false, msg: `type[${at}]: spec wants ${specN.type} (${typeClass(specN.type)}), built ${builtN.type} (${typeClass(builtN.type)})` });
+  }
 
-  // height (enforced) — width is content-hug, informational only
+  // height — enforced, unless the spec's own height is non-physical (then hint).
   if (specN.h != null) {
     const dh = Math.abs((builtN.h ?? 0) - specN.h);
-    rules.push({
-      ok: dh <= tol,
-      msg: dh <= tol ? `height[${at}]: ${builtN.h}px` : `height[${at}]: built ${builtN.h}px, spec ${specN.h}px (off ${dh}px)`,
-    });
+    if (nonPhysicalHeight(specN)) {
+      rules.push({ ok: dh <= tol, warn: true, msg: `height[${at}]: spec ${specN.h}px is non-physical (children need more) — built ${builtN.h}px, not enforced` });
+    } else {
+      rules.push({ ok: dh <= tol, msg: dh <= tol ? `height[${at}]: ${builtN.h}px` : `height[${at}]: built ${builtN.h}px, spec ${specN.h}px (off ${dh}px)` });
+    }
   }
 
   // layout direction
@@ -218,5 +247,7 @@ export function checkConformance(spec, measured, opts = {}) {
     compareNode(spec.sample, measured.sampleTree, spec.sample.name, rules, tol);
   }
 
-  return { pass: rules.every(r => r.ok), rules };
+  // A warn (composition hint / non-physical dim) is advisory — it never fails
+  // the build. Only hard rule violations do.
+  return { pass: rules.every(r => r.ok || r.warn), rules };
 }

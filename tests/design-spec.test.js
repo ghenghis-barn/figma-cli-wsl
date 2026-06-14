@@ -115,3 +115,51 @@ describe('checkConformance (hard, deep)', () => {
     assert.ok(pass);
   });
 });
+
+describe('checkConformance severity (hints vs hard rules)', () => {
+  const md = `## 6. Components
+
+### Field
+
+Page: Forms · 4 variants
+
+| Property | Values |
+|---|---|
+| state | rest, focus |
+
+Sample variant structure:
+
+- **state=rest** · \`COMPONENT\` · 92×20 · horizontal row, gap 8px · 1 children
+  - **LabelGroup** · \`FRAME\` · 68×20 · vertical stack, gap 4px · 2 children
+    - **Label** · \`INSTANCE\` · 68×20 · horizontal row, gap 2px · instance of Label
+    - **Caption** · \`INSTANCE\` · 69×20 · vertical stack · instance of Caption
+`;
+  const spec = findComponentSpec(md, 'Field');
+
+  it('an INSTANCE built as raw TEXT is a HINT, not a failure', () => {
+    const built = {
+      type: 'COMPONENT_SET', variantProps: ['state'], variants: [{ name: 'state=rest', w: 92, h: 20 }],
+      sampleTree: { name: 'state=rest', type: 'COMPONENT', w: 92, h: 20, lm: 'HORIZONTAL', gap: 8, children: [
+        { name: 'LabelGroup', type: 'FRAME', w: 68, h: 40, lm: 'VERTICAL', gap: 4, children: [
+          { name: 'Label', type: 'TEXT', w: 68, h: 20 },
+          { name: 'Caption', type: 'TEXT', w: 69, h: 20 },
+        ] },
+      ] },
+    };
+    const { pass, rules } = checkConformance(spec, built);
+    assert.ok(pass, 'composition hints + non-physical dims must not fail the build');
+    assert.ok(rules.some(r => r.warn && /Consider instancing/.test(r.msg)), 'should hint to instance the component');
+    assert.ok(rules.some(r => r.warn && /non-physical/.test(r.msg)), 'should flag the 20px-vs-40px group as non-physical');
+  });
+
+  it('a genuine structural error (TEXT where spec wants TEXT-less container mismatch) still fails', () => {
+    const built = {
+      type: 'COMPONENT_SET', variantProps: ['state'], variants: [{ name: 'state=rest', w: 92, h: 20 }],
+      sampleTree: { name: 'state=rest', type: 'COMPONENT', w: 92, h: 20, lm: 'HORIZONTAL', gap: 8, children: [
+        { name: 'LabelGroup', type: 'TEXT', w: 68, h: 20 },  // spec wants a FRAME container here
+      ] },
+    };
+    const { pass } = checkConformance(spec, built);
+    assert.ok(!pass, 'a FRAME built as TEXT is a real failure');
+  });
+});

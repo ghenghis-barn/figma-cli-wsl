@@ -118,11 +118,15 @@ program
     }
     const { pass, rules } = checkConformance(spec, measured, { tolerance: parseFloat(options.tolerance) });
     console.log(chalk.bold(`Conformance: ${spec.name} vs ${options.check}`));
-    for (const r of rules) console.log(`  ${r.ok ? chalk.green('✓') : chalk.red('✗')} ${r.msg}`);
+    for (const r of rules) {
+      const mark = r.ok ? chalk.green('✓') : r.warn ? chalk.yellow('⚠') : chalk.red('✗');
+      console.log(`  ${mark} ${r.warn ? chalk.yellow(r.msg) : r.msg}`);
+    }
     if (!rules.length) console.log(chalk.gray('  (no enforceable rules for this component)'));
+    const warns = rules.filter(r => !r.ok && r.warn).length;
     if (!pass) {
       console.log(chalk.red('\n✗ Build does NOT conform to the DESIGN.md spec.'));
       process.exit(1);
     }
-    console.log(chalk.green('\n✓ Conforms to spec.'));
+    console.log(chalk.green(`\n✓ Conforms to spec.${warns ? chalk.yellow(` (${warns} advisory hint${warns > 1 ? 's' : ''})`) : ''}`));
   });
