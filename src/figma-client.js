@@ -8,6 +8,37 @@
 import WebSocket from 'ws';
 import { getCdpPort } from './figma-patch.js';
 
+/**
+ * Visible fallback colors for shadcn semantic token names (Zinc light theme).
+ * When a `var:` reference can't be resolved (e.g. the user never loaded any
+ * variables, which is a totally valid choice), the renderer used to fall back
+ * to opaque grey — which made shadcn components render as grey blocks with
+ * invisible same-grey text. Falling back to the real default value instead
+ * means components look correct WITHOUT forcing anyone to load a token set.
+ * Values are 0–1 rgb floats (hex / 255).
+ */
+const SEMANTIC_VAR_DEFAULTS = {
+  background: { r: 1, g: 1, b: 1 },
+  foreground: { r: 0.039, g: 0.039, b: 0.043 },
+  card: { r: 1, g: 1, b: 1 },
+  'card-foreground': { r: 0.039, g: 0.039, b: 0.043 },
+  popover: { r: 1, g: 1, b: 1 },
+  'popover-foreground': { r: 0.039, g: 0.039, b: 0.043 },
+  primary: { r: 0.094, g: 0.094, b: 0.106 },
+  'primary-foreground': { r: 0.98, g: 0.98, b: 0.98 },
+  secondary: { r: 0.957, g: 0.957, b: 0.961 },
+  'secondary-foreground': { r: 0.094, g: 0.094, b: 0.106 },
+  muted: { r: 0.957, g: 0.957, b: 0.961 },
+  'muted-foreground': { r: 0.443, g: 0.443, b: 0.478 },
+  accent: { r: 0.957, g: 0.957, b: 0.961 },
+  'accent-foreground': { r: 0.094, g: 0.094, b: 0.106 },
+  destructive: { r: 0.937, g: 0.267, b: 0.267 },
+  'destructive-foreground': { r: 0.98, g: 0.98, b: 0.98 },
+  border: { r: 0.894, g: 0.894, b: 0.906 },
+  input: { r: 0.894, g: 0.894, b: 0.906 },
+  ring: { r: 0.094, g: 0.094, b: 0.106 },
+};
+
 export class FigmaClient {
   constructor() {
     this.ws = null;
@@ -58,7 +89,7 @@ export class FigmaClient {
   /**
    * Connect to a Figma design file
    */
-  async connect(pageTitle = null) {
+  async connect(pageTitle = null, { timeoutMs = 15000 } = {}) {
     const port = getCdpPort();
     const response = await fetch(`http://localhost:${port}/json`);
     const pages = await response.json();
@@ -152,7 +183,7 @@ export class FigmaClient {
 
       this.ws.on('error', reject);
 
-      setTimeout(() => reject(new Error('Connection timeout')), 15000);
+      setTimeout(() => reject(new Error('Connection timeout')), timeoutMs);
     });
   }
 
@@ -430,11 +461,21 @@ export class FigmaClient {
       // Collect names that callers asked for but didn't resolve so we can
       // surface them at the end instead of silently rendering grey.
       globalThis.__unresolvedVars = globalThis.__unresolvedVars || new Set();
+      const __varDefaults = ${JSON.stringify(SEMANTIC_VAR_DEFAULTS)};
+      const __defaultColor = (requestedKey) => {
+        if (!requestedKey) return null;
+        let k = String(requestedKey);
+        const c = k.lastIndexOf(':'); if (c >= 0) k = k.slice(c + 1);
+        const s = k.lastIndexOf('/'); if (s >= 0) k = k.slice(s + 1);
+        return __varDefaults[k] || null;
+      };
       const boundFill = (variable, requestedKey) => {
         if (!variable) {
           if (requestedKey) globalThis.__unresolvedVars.add(requestedKey);
-          // Fallback paint stays grey so the renderer doesn't crash.
-          return { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } };
+          // No variable loaded for this name. Fall back to the semantic token's
+          // real default color so the component stays VISIBLE (grey-on-grey made
+          // text disappear). Unknown names still get neutral grey.
+          return { type: 'SOLID', color: __defaultColor(requestedKey) || { r: 0.5, g: 0.5, b: 0.5 } };
         }
         return figma.variables.setBoundVariableForPaint(
           { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable
@@ -1546,10 +1587,20 @@ export class FigmaClient {
           return vars[key];
         };
         globalThis.__unresolvedVars = globalThis.__unresolvedVars || new Set();
+        const __varDefaults = ${JSON.stringify(SEMANTIC_VAR_DEFAULTS)};
+        const __defaultColor = (requestedKey) => {
+          if (!requestedKey) return null;
+          let k = String(requestedKey);
+          const c = k.lastIndexOf(':'); if (c >= 0) k = k.slice(c + 1);
+          const s = k.lastIndexOf('/'); if (s >= 0) k = k.slice(s + 1);
+          return __varDefaults[k] || null;
+        };
         const boundFill = (variable, requestedKey) => {
           if (!variable) {
             if (requestedKey) globalThis.__unresolvedVars.add(requestedKey);
-            return { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } };
+            // No variable loaded — use the semantic token's real default color
+            // so the component stays VISIBLE instead of grey-on-grey.
+            return { type: 'SOLID', color: __defaultColor(requestedKey) || { r: 0.5, g: 0.5, b: 0.5 } };
           }
           return figma.variables.setBoundVariableForPaint(
             { type: 'SOLID', color: { r: 0.5, g: 0.5, b: 0.5 } }, 'color', variable

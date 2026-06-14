@@ -235,8 +235,22 @@ function getTokenStatus() {
   return status;
 }
 
+// Process-level health cache. A single CLI command checks daemon health 3-4
+// times across checkConnection/fastRender/command-internal guards — each was a
+// fresh `curl` subprocess spawn. Since a CLI process is short-lived, caching the
+// boolean result for a brief window collapses those to one spawn. `force` and
+// the detail form always bypass the cache (used by retry/fallback logic that
+// must see the live state after a failure).
+let _daemonHealthCache = { time: 0, value: null };
+const DAEMON_HEALTH_TTL_MS = 2000;
+function invalidateDaemonHealthCache() { _daemonHealthCache = { time: 0, value: null }; }
+
 // Check if daemon is running (returns object with details, or false)
-function isDaemonRunning(returnDetails = false) {
+function isDaemonRunning(returnDetails = false, force = false) {
+  if (!returnDetails && !force && _daemonHealthCache.value !== null &&
+      Date.now() - _daemonHealthCache.time < DAEMON_HEALTH_TTL_MS) {
+    return _daemonHealthCache.value;
+  }
   try {
     const token = getDaemonToken();
     const tokenHeader = token ? ` -H "X-Daemon-Token: ${token}"` : '';
@@ -255,7 +269,9 @@ function isDaemonRunning(returnDetails = false) {
         authFailed: statusCode === '403'
       };
     }
-    return statusCode === '200';
+    const ok = statusCode === '200';
+    _daemonHealthCache = { time: Date.now(), value: ok };
+    return ok;
   } catch (e) {
     if (returnDetails) {
       return {
@@ -264,6 +280,7 @@ function isDaemonRunning(returnDetails = false) {
         hasToken: !!getDaemonToken()
       };
     }
+    _daemonHealthCache = { time: Date.now(), value: false };
     return false;
   }
 }
@@ -344,10 +361,35 @@ async function daemonExec(action, data = {}, timeoutMs = 90000) {
   }
 }
 
+// Ensure the daemon is up before sending it work. The daemon idle-shuts-down
+// after a while, so a command issued after a quiet stretch would otherwise find
+// it dead and limp along on the slow direct-connection path for the rest of the
+// session. Here we transparently respawn it and wait briefly for health, so the
+// fast path self-heals. Only auto-restarts when the user has connected before
+// (PID file present) — never spawns a daemon on a fresh, never-connected setup.
+async function ensureDaemonRunning(maxWaitMs = 5000) {
+  if (isDaemonRunning()) return true;
+  // Guard: only resurrect a daemon the user actually set up — either a PID file
+  // is present (idle-shutdown leaves it) or Figma is patched for Yolo Mode (so
+  // the daemon is the intended fast path even after an explicit stop).
+  if (!existsSync(DAEMON_PID_FILE) && !isFigmaPatched()) return false;
+  try {
+    startDaemon();
+  } catch {
+    return false;
+  }
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    await new Promise(r => setTimeout(r, 200));
+    if (isDaemonRunning(false, true)) return true; // force: bypass the "false" we just cached
+  }
+  return false;
+}
+
 // Fast eval via daemon (falls back to direct connection)
 async function fastEval(code) {
-  // Try daemon first
-  if (isDaemonRunning()) {
+  // Try daemon first (auto-restarting it if it idle-shut-down)
+  if (await ensureDaemonRunning()) {
     try {
       return await daemonExec('eval', { code });
     } catch (e) {
@@ -362,8 +404,8 @@ async function fastEval(code) {
 
 // Fast render via daemon (falls back to direct connection)
 async function fastRender(jsx) {
-  // Try daemon first
-  if (isDaemonRunning()) {
+  // Try daemon first (auto-restarting it if it idle-shut-down)
+  if (await ensureDaemonRunning()) {
     try {
       return await daemonExec('render', { jsx });
     } catch (e) {
@@ -419,11 +461,13 @@ function startDaemon(forceRestart = false, mode = 'auto') {
 
   // Save PID
   writeFileSync(DAEMON_PID_FILE, String(child.pid));
+  invalidateDaemonHealthCache(); // state changed — don't serve a stale "down"
   return true;
 }
 
 // Stop daemon
 function stopDaemon() {
+  invalidateDaemonHealthCache(); // state changed — don't serve a stale "up"
   try {
     if (existsSync(DAEMON_PID_FILE)) {
       const pid = readFileSync(DAEMON_PID_FILE, 'utf8').trim();
@@ -498,7 +542,16 @@ let _figmaClient = null;
 async function getFigmaClient() {
   if (!_figmaClient) {
     _figmaClient = new FigmaClient();
-    await _figmaClient.connect();
+    // Short timeout: this is the per-command direct fallback (daemon couldn't be
+    // used). If Figma's CDP isn't reachable we want to fail in ~4s, not hang for
+    // 15s on every command. The explicit `connect` command keeps the 15s default
+    // because Figma may still be booting then.
+    try {
+      await _figmaClient.connect(null, { timeoutMs: 4000 });
+    } catch (e) {
+      _figmaClient = null;
+      throw e;
+    }
   }
   return _figmaClient;
 }
@@ -691,6 +744,12 @@ function figmaUse(args, options = {}) {
 
 // Helper: Check connection
 async function checkConnection() {
+  // Self-heal: if the daemon idle-shut-down, bring it back BEFORE any command
+  // tries to talk to it. Several command paths (e.g. render-batch) call
+  // daemonExec directly with no fallback, so a dead daemon would hard-error
+  // rather than just run slow. Resurrecting it here keeps the fast path alive.
+  await ensureDaemonRunning();
+
   // First check daemon (works for both CDP and Plugin modes)
   try {
     const connToken = getDaemonToken();

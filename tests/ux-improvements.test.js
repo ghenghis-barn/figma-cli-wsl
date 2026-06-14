@@ -40,6 +40,24 @@ describe('unresolved vars in single render', () => {
     assert.ok(code.includes('unresolved'), 'return value must include unresolved list');
     assert.ok(/__unresolved\.length > 0/.test(code), 'must return wrapped object when unresolved vars exist');
   });
+
+  // Regression: shadcn components bound to var:primary etc. used to render
+  // grey-on-grey (invisible text) when no matching variable existed, because
+  // boundFill fell back to opaque grey for BOTH fill and text. The fallback now
+  // resolves to the semantic token's real default color so components stay
+  // visible WITHOUT requiring any variables to be loaded.
+  it('unresolved semantic vars fall back to their real default color, not grey', async () => {
+    const single = await client.parseJSX('<Frame name="B" bg="var:primary"><Text color="var:primary-foreground">x</Text></Frame>');
+    const batch = await client.parseJSXBatch(['<Frame name="B" bg="var:primary"><Text color="var:primary-foreground">x</Text></Frame>']);
+    for (const [label, code] of [['single', single], ['batch', batch]]) {
+      assert.ok(code.includes('__varDefaults'), `${label}: default-color map must be embedded`);
+      assert.ok(code.includes('__defaultColor'), `${label}: default-color resolver must be present`);
+      // primary default is dark zinc, primary-foreground is near-white — both
+      // must be in the embedded map so bg + text don't collapse to grey.
+      assert.ok(code.includes('"primary"') && code.includes('0.094'), `${label}: primary default (dark) must be present`);
+      assert.ok(code.includes('"primary-foreground"') && code.includes('0.98'), `${label}: primary-foreground default (near-white) must be present`);
+    }
+  });
 });
 
 // ----------------------------------------------------------------
