@@ -509,7 +509,7 @@ export class FigmaClient {
       const align = props.items || props.align || 'MIN';
       const justify = props.justify || 'MIN';
       const wrap = props.wrap === true || props.wrap === 'true';
-      const wrapGap = Number(props.wrapGap || props.counterAxisSpacing || 0);
+      const wrapGap = Number(props.wrapGap || props.rowGap || props.counterAxisSpacing || 0);
       const hug = props.hug || '';
       // Generic node-level visuals that just need straight property
       // assignment. Reading these here means callers can drop opacity / lock
@@ -1182,7 +1182,7 @@ export class FigmaClient {
 
           // NEW: wrap, wrapGap, grow, position props
           const fWrap = item.wrap === true || item.wrap === 'true';
-          const fWrapGap = Number(item.wrapGap || item.counterAxisSpacing || 0);
+          const fWrapGap = Number(item.wrapGap || item.rowGap || item.counterAxisSpacing || 0);
           const fGrow = item.grow !== undefined ? Number(item.grow) : null;
           const fPosition = item.position || 'auto';
           const fAbsoluteX = item.x !== undefined ? Number(item.x) : 0;
@@ -1610,7 +1610,7 @@ export class FigmaClient {
     const hugHeight = hHug || hug === 'both' || hug === 'h' || hug === 'height';
     // New: wrap and wrapGap for horizontal layouts
     const wrap = props.wrap === true || props.wrap === 'true';
-    const wrapGap = Number(props.wrapGap || props.counterAxisSpacing || 0);
+    const wrapGap = Number(props.wrapGap || props.rowGap || props.counterAxisSpacing || 0);
 
     // Track variable usage for fast binding
     let usesVars = false;
