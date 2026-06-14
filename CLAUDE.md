@@ -30,6 +30,8 @@ CLI that controls Figma Desktop directly. No API key needed.
 | "import my tailwind colors" | `figma-cli import tailwind.config.js` |
 | "import our css variables" | `figma-cli import src/globals.css` |
 | "import design tokens json" | `figma-cli import tokens.json` |
+| "export tokens as DTCG / design tokens json" | `figma-cli export dtcg tokens.json` |
+| "export tokens as CSS / Tailwind" | `figma-cli export css` / `figma-cli export tailwind` |
 | "load our storybook" | `figma-cli import http://localhost:6006` |
 
 **Wallpaper palette tip:** for rich results pass **5-6 hue-diverse colors** (mix warm + cool + a bright accent), not shades of one color. Analogous palettes blend into a flat 2-tone wash. The command auto-adds a depth anchor + focal glow, and `--style auto` rotates compositions (scatter/diagonal/bands/drift/spotlight/corners). For N wallpapers, run it N times with different palettes + styles. Add `--grain` for subtle film-grain NOISE or `--texture` for paper grain over the wallpaper.
@@ -160,6 +162,25 @@ Returns JSON with base64 image (max 2000px). This is for internal AI checks, not
 sizing for the node + up to 3 levels of children). Use it to catch size bugs by
 NUMBERS, not by eyeballing the screenshot: a divider/row that reads as 100px tall
 when it should be ~32px is obvious in `measure`, invisible at a glance.
+
+---
+
+## Token Hygiene (keep context lean → answers stay reliable)
+
+Big tool output accumulates in the conversation; when context fills, Claude Code
+compacts it and DETAILS get lost (exact node IDs, values, what was tried), which
+shows up as confidently-wrong recall ("hallucinated" IDs). Keep context lean:
+
+- **Always `verify --save <path>`** for visual checks — writes the PNG to disk and
+  returns just dimensions, instead of dumping a base64 image (~2k tokens) into context.
+- **Pipe bulky command output to `wc -c` / a file** when you only need the size or
+  a grep, not the whole thing (`… | grep -E "✓|✗"`, `… > /tmp/out.txt; wc -l`).
+- **Prefer the terse commands**: `spec --check` returns a short verdict; `daemon
+  status` is ~8 tokens. Don't fetch full dumps when a summary answers the question.
+- **`/compact` or `/clear` between unrelated tasks** — fresh context = most reliable.
+- **Don't drive the same task through a verbose MCP (e.g. figma-console) in parallel** —
+  its responses + 100+ tool schemas fill context several times faster than figma-cli.
+  If you must, use its `format:"summary"` / `verbosity:"inventory"` flags.
 
 ---
 

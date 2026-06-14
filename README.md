@@ -255,7 +255,7 @@ Prefer to keep everything on your machine? figma-ds-cli also works with **local 
 - One-shot full a11y audit
 
 **📦 Handoff & export (4)**
-- Export **PNG, SVG, JSX**, Storybook stories, CSS variables, Tailwind config
+- Export **PNG, SVG, JSX**, Storybook stories, CSS variables, Tailwind config, and **DTCG / W3C design-tokens JSON** , so tokens round-trip both ways (import *and* export)
 - Link components to **Storybook / GitHub / docs**
 - Inline **annotations** for usage rules and token references
 - Recreate a live webpage in Figma from a URL
