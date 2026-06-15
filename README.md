@@ -4,7 +4,9 @@
   <a href="https://intodesignsystems.com"><img src="https://img.shields.io/badge/Into_Design_Systems-intodesignsystems.com-ff6b35" alt="Into Design Systems"></a>
   <img src="https://img.shields.io/badge/Figma-Desktop-purple" alt="Figma Desktop">
   <img src="https://img.shields.io/badge/No_API_Key-Required-green" alt="No API Key">
-  <img src="https://img.shields.io/badge/Talk_to-Claude-blue" alt="Talk to Claude">
+  <img src="https://img.shields.io/badge/No_MCP-Required-green" alt="No MCP Required">
+  <img src="https://img.shields.io/badge/No_Rate_Limits-✓-green" alt="No Rate Limits">
+  <img src="https://img.shields.io/badge/Works_in-Claude_Code-D97757?logo=claude&logoColor=white" alt="Works in Claude Code">
   <a href="#using-cursor"><img src="https://img.shields.io/badge/Works_in-Cursor-000000?logo=cursor&logoColor=white" alt="Works in Cursor"></a>
 </p>
 
