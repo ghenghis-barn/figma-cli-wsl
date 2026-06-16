@@ -4,38 +4,10 @@
 // costs zero LLM tokens — the CLI returns a compact digest / verdict, not the
 // 600-line structure dump.
 import chalk from 'chalk';
-import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { readFileSync } from 'fs';
 import { program, checkConnection, fastEval } from '../lib/cli-core.js';
-import { findComponentSpec, checkConformance } from '../lib/design-spec.js';
-
-const MARKER = 'Sample variant structure:';   // a DESIGN.md with a Components section
-
-// Find a DESIGN.md (any name) in cwd or one level of subdirs. CLI-side file
-// reads only — no model tokens spent scanning.
-function locateDesignMd(explicit) {
-  if (explicit) return existsSync(explicit) ? explicit : null;
-  const cwd = process.cwd();
-  const candidates = [];
-  const scanDir = (dir, depth) => {
-    let entries;
-    try { entries = readdirSync(dir); } catch { return; }
-    for (const e of entries) {
-      if (e.startsWith('.') || e === 'node_modules') continue;
-      const p = join(dir, e);
-      let st;
-      try { st = statSync(p); } catch { continue; }
-      if (st.isFile() && e.endsWith('.md')) candidates.push(p);
-      else if (st.isDirectory() && depth > 0) scanDir(p, depth - 1);
-    }
-  };
-  scanDir(cwd, 1);
-  // Prefer files that actually contain a Components section.
-  for (const f of candidates) {
-    try { if (readFileSync(f, 'utf8').includes(MARKER)) return f; } catch {}
-  }
-  return null;
-}
+import { findComponentSpec, checkConformance, formatReuseDigest } from '../lib/design-spec.js';
+import { locateDesignMd } from '../lib/design-md-locate.js';
 
 // Measure a built node for conformance: type, variant property names, each
 // variant's name + size, and a DEEP tree (layout/gap/padding/children) of the
@@ -93,6 +65,8 @@ program
       // Digest mode — compact authoritative spec, no structure dump.
       const axisLines = Object.entries(spec.axes).map(([k, v]) => `  ${k}: ${v.join(', ')}`);
       console.log(chalk.bold(spec.name) + chalk.gray(`  (${spec.variants} variants${spec.page ? ` · ${spec.page}` : ''})`));
+      const reuseLines = formatReuseDigest(spec);
+      if (reuseLines.length) console.log(chalk.gray(reuseLines.join('\n')));
       if (axisLines.length) {
         console.log(chalk.gray('axes:'));
         console.log(axisLines.join('\n'));

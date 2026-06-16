@@ -70,6 +70,11 @@ export function walkerCode(pageId, { maxDepth = 8, textLimit = 80 } = {}) {
       if (n.type === 'COMPONENT_SET') {
         try { o.vp = n.variantGroupProperties; } catch (e) {}
         o.kidCount = n.children.length;
+        // Reuse handle: the default variant is the COMPONENT you instance
+        // (a set has no createInstance). Capture its node id (same-file reuse)
+        // and publish key (cross-file reuse, only resolvable once published).
+        const dv = n.defaultVariant || n.children[0];
+        if (dv) { o.id = dv.id; try { o.key = dv.key; } catch (e) {} }
         if (n.children.length) o.kids = [walk(n.children[0], depth + 1)];
         return o;
       }
@@ -139,7 +144,7 @@ export function buildCensus(pages) {
       bump(census.typography, [n.txt.font, n.txt.style || '', n.txt.size ?? '', n.txt.lh ?? '', n.txt.ls ?? ''].join('|'));
     }
     if (n.t === 'COMPONENT_SET') {
-      census.componentSets.push({ name: n.n, page: pageName, props: n.vp || {}, variants: n.kidCount || 0, sample: n.kids?.[0] });
+      census.componentSets.push({ name: n.n, page: pageName, props: n.vp || {}, variants: n.kidCount || 0, sample: n.kids?.[0], key: n.key, id: n.id });
     }
     (n.kids || []).forEach(k => visit(k, pageName));
   };
@@ -323,6 +328,18 @@ export function variantMatrixTable(props) {
   return ['| Property | Values |', '|---|---|', ...rows].join('\n');
 }
 
+/**
+ * Reuse handle markdown line for a component census entry. Pure.
+ * Returns the line, or null when there is no handle to emit.
+ */
+export function reuseHandleLine({ key, id } = {}) {
+  const parts = [];
+  if (key) parts.push(`key \`${key}\``);
+  if (id) parts.push(`node \`${id}\``);
+  if (!parts.length) return null;
+  return `Reuse: import existing — ${parts.join(' · ')}`;
+}
+
 // ============ Markdown writer ============
 
 export const ALL_SECTIONS = [
@@ -435,6 +452,8 @@ export function generateDesignMd(extraction, options = {}) {
       for (const cs of census.componentSets) {
         out.push(`### ${cs.name}`, '');
         out.push(`Page: ${cs.page} · ${cs.variants} variants`, '');
+        const reuse = reuseHandleLine({ key: cs.key, id: cs.id });
+        if (reuse) out.push(reuse, '');
         out.push(variantMatrixTable(cs.props), '');
         if (cs.sample) {
           out.push('Sample variant structure:', '');

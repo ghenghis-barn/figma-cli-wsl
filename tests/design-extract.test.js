@@ -33,6 +33,13 @@ test('walkerCode loads the page before reading children (dynamic-page mode)', ()
   assert.ok(code.indexOf('loadAsync') < code.indexOf('count(page)'));
 });
 
+test('walkerCode captures the default-variant reuse handle on a COMPONENT_SET', () => {
+  const code = walkerCode('1:1');
+  assert.match(code, /defaultVariant/);
+  assert.match(code, /o\.id = dv\.id/);
+  assert.match(code, /o\.key = dv\.key/);
+});
+
 import { buildCensus, assignSemanticNames } from '../src/design-extract.js';
 
 export const FIXTURE_PAGES = [
@@ -63,6 +70,17 @@ test('buildCensus strips opacity suffix from paint strings', () => {
     { t: 'FRAME', n: 'F', w: 10, h: 10, fills: ['#000000@50'] },
   ] }]);
   assert.equal(census.colors.get('#000000'), 1);
+});
+
+test('buildCensus carries key/id from a COMPONENT_SET walker node', () => {
+  const pages = [{ id: '1:1', name: 'P', nodeCount: 1, frames: [
+    { t: 'COMPONENT_SET', n: 'Button', vp: { Size: { values: ['S', 'M'] } },
+      kidCount: 2, key: 'abc123', id: '10:5', kids: [{ t: 'COMPONENT', n: 'Size=S' }] },
+  ] }];
+  const census = buildCensus(pages);
+  assert.equal(census.componentSets.length, 1);
+  assert.equal(census.componentSets[0].key, 'abc123');
+  assert.equal(census.componentSets[0].id, '10:5');
 });
 
 test('assignSemanticNames classifies by lightness and chroma', () => {
@@ -222,4 +240,27 @@ test('estimateStructureTokens returns a positive token estimate', () => {
 test('estimateStructureTokens skips errored pages and handles empty input', () => {
   assert.equal(estimateStructureTokens([]), 0);
   assert.equal(estimateStructureTokens([{ id: 'x', name: 'E', error: 'boom' }]), 0);
+});
+
+import { reuseHandleLine } from '../src/design-extract.js';
+
+test('reuseHandleLine: key + id', () => {
+  assert.equal(reuseHandleLine({ key: 'abc', id: '1:2' }),
+    'Reuse: import existing — key `abc` · node `1:2`');
+});
+test('reuseHandleLine: id only', () => {
+  assert.equal(reuseHandleLine({ id: '1:2' }), 'Reuse: import existing — node `1:2`');
+});
+test('reuseHandleLine: neither → null', () => {
+  assert.equal(reuseHandleLine({}), null);
+  assert.equal(reuseHandleLine(), null);
+});
+
+test('generateDesignMd components section emits the Reuse line', () => {
+  const pages = [{ id: '1:1', name: 'P', nodeCount: 1, frames: [
+    { t: 'COMPONENT_SET', n: 'Button', vp: { Size: { values: ['S', 'M'] } },
+      kidCount: 2, key: 'abc123', id: '10:5', kids: [{ t: 'COMPONENT', n: 'Size=S' }] },
+  ] }];
+  const md = generateDesignMd({ fileName: 'F', date: '2026-06-16', pages }, { sections: ['components'] });
+  assert.match(md, /Reuse: import existing — key `abc123` · node `10:5`/);
 });

@@ -15,6 +15,8 @@ CLI that controls Figma Desktop directly. No API key needed.
 | "create cards/buttons" | `render-batch` + `node to-component` |
 | "create a rectangle/frame" | `figma-cli render '<Frame>...'` |
 | "convert to component" | `figma-cli node to-component "ID"` |
+| "use the existing X component" / "don't rebuild, instance it" | `figma-cli instantiate "X"` |
+| "what component already exists for X" | `figma-cli spec X` (shows the reuse handle) |
 | "list variables" | `figma-cli var list` |
 | "find nodes named X" | `figma-cli find "X"` |
 | "what's on canvas" | `figma-cli canvas info` |
@@ -143,6 +145,17 @@ That one line is correct, atomic, and produces 4 independent buttons whose `var:
 - Single-node operations that don't have a CLI command (e.g. setting an obscure Plugin API property)
 - Bulk reads (querying current state)
 - Operations that mutate existing nodes (not creation)
+
+### ♻️ REUSE BEFORE REBUILD (extracted systems)
+
+When a DESIGN.md was produced by `figma-cli extract`, every component carries a
+**reuse handle**. If the user asks to "use" / "add" / "drop in" a component that
+already exists in that system, do NOT re-render it — instance it:
+
+- `figma-cli spec "Button"` shows the handle and prints the exact command.
+- `figma-cli instantiate "Button"` drops a real instance (same-file via node id,
+  cross-file via library key). This keeps the design consistent with the source
+  system instead of producing a divergent hand-built copy.
 
 ---
 
