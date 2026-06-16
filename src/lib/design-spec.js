@@ -113,6 +113,23 @@ export function parseComponentSpecs(md) {
   return specs;
 }
 
+/**
+ * Compact reuse hint for the `spec` digest. Pure. Returns string[] (lines) or [].
+ * Shown as the recommended path BEFORE the axes — instance, don't rebuild.
+ */
+export function formatReuseDigest(spec) {
+  if (!spec || !spec.reuse) return [];
+  const { key, id } = spec.reuse;
+  const refs = [
+    key ? `key ${key.slice(0, 8)}…` : null,
+    id ? `node ${id} (same-file)` : null,
+  ].filter(Boolean).join('  ·  ');
+  return [
+    `reuse: figma-cli instantiate "${spec.name}"   ← use the existing component, don't rebuild`,
+    `  ${refs}`,
+  ];
+}
+
 /** Find one component spec by name: exact (case-insensitive) → prefix → substring. */
 export function findComponentSpec(md, name) {
   const specs = parseComponentSpecs(md);

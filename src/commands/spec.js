@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { program, checkConnection, fastEval } from '../lib/cli-core.js';
-import { findComponentSpec, checkConformance } from '../lib/design-spec.js';
+import { findComponentSpec, checkConformance, formatReuseDigest } from '../lib/design-spec.js';
 
 const MARKER = 'Sample variant structure:';   // a DESIGN.md with a Components section
 
@@ -93,6 +93,8 @@ program
       // Digest mode — compact authoritative spec, no structure dump.
       const axisLines = Object.entries(spec.axes).map(([k, v]) => `  ${k}: ${v.join(', ')}`);
       console.log(chalk.bold(spec.name) + chalk.gray(`  (${spec.variants} variants${spec.page ? ` · ${spec.page}` : ''})`));
+      const reuseLines = formatReuseDigest(spec);
+      if (reuseLines.length) console.log(chalk.gray(reuseLines.join('\n')));
       if (axisLines.length) {
         console.log(chalk.gray('axes:'));
         console.log(axisLines.join('\n'));

@@ -261,3 +261,18 @@ describe('reuse handle parsing', () => {
     assert.deepEqual(specs[0].reuse, { key: 'abc123', id: '10:5' });
   });
 });
+
+import { formatReuseDigest } from '../src/lib/design-spec.js';
+
+describe('formatReuseDigest', () => {
+  it('renders the instantiate hint + truncated key', () => {
+    const lines = formatReuseDigest({ name: 'Button', reuse: { key: '0a1b2c3d4e5f', id: '10:5' } });
+    const joined = lines.join('\n');
+    assert.match(joined, /figma-cli instantiate "Button"/);
+    assert.match(joined, /key 0a1b2c3d…/);
+    assert.match(joined, /node 10:5 \(same-file\)/);
+  });
+  it('no reuse → empty', () => {
+    assert.deepEqual(formatReuseDigest({ name: 'X' }), []);
+  });
+});
