@@ -60,6 +60,19 @@ function parseStructureTree(text) {
   return root;
 }
 
+/**
+ * Parse a "Reuse: import existing — key `x` · node `y`" line out of a block. Pure.
+ * Returns { key, id } (either may be null) or null when there is no line.
+ */
+export function parseReuseLine(text) {
+  const m = /^Reuse:.*$/m.exec(text || '');
+  if (!m) return null;
+  const key = (/key\s+`([^`]+)`/.exec(m[0]) || [])[1] || null;
+  const id = (/node\s+`([^`]+)`/.exec(m[0]) || [])[1] || null;
+  if (!key && !id) return null;
+  return { key, id };
+}
+
 /** Parse every component block out of a DESIGN.md string. */
 export function parseComponentSpecs(md) {
   if (!md || typeof md !== 'string') return [];
@@ -95,7 +108,7 @@ export function parseComponentSpecs(md) {
     const sIdx = body.indexOf('Sample variant structure:');
     if (sIdx >= 0) sample = parseStructureTree(body.slice(sIdx + 'Sample variant structure:'.length));
 
-    specs.push({ name: b.name, page: pageM ? pageM[1].trim() : null, variants: Number(vm[1]), axes, sample });
+    specs.push({ name: b.name, page: pageM ? pageM[1].trim() : null, variants: Number(vm[1]), axes, sample, reuse: parseReuseLine(body) });
   }
   return specs;
 }

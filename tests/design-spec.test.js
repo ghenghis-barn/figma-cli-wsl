@@ -230,3 +230,34 @@ Sample variant structure:
     assert.ok(rules.some(r => /no matching item built/.test(r.msg)), 'should note the Heading/Divider item types were not built');
   });
 });
+
+import { parseReuseLine } from '../src/lib/design-spec.js';
+import { reuseHandleLine } from '../src/design-extract.js';
+
+describe('reuse handle parsing', () => {
+  it('parseReuseLine round-trips with reuseHandleLine', () => {
+    const line = reuseHandleLine({ key: 'abc123', id: '10:5' });
+    assert.deepEqual(parseReuseLine(line), { key: 'abc123', id: '10:5' });
+  });
+  it('parseReuseLine: id only', () => {
+    assert.deepEqual(parseReuseLine(reuseHandleLine({ id: '10:5' })), { key: null, id: '10:5' });
+  });
+  it('parseReuseLine: no line → null', () => {
+    assert.equal(parseReuseLine('no handle here'), null);
+  });
+  it('parseComponentSpecs picks up reuse handle', () => {
+    const md = [
+      '### Button',
+      'Page: P · 2 variants',
+      'Reuse: import existing — key `abc123` · node `10:5`',
+      '',
+      '| Property | Values |',
+      '|---|---|',
+      '| Size | S, M |',
+      '',
+    ].join('\n');
+    const specs = parseComponentSpecs(md);
+    assert.equal(specs.length, 1);
+    assert.deepEqual(specs[0].reuse, { key: 'abc123', id: '10:5' });
+  });
+});
