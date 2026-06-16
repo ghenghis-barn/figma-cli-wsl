@@ -241,3 +241,26 @@ test('estimateStructureTokens skips errored pages and handles empty input', () =
   assert.equal(estimateStructureTokens([]), 0);
   assert.equal(estimateStructureTokens([{ id: 'x', name: 'E', error: 'boom' }]), 0);
 });
+
+import { reuseHandleLine } from '../src/design-extract.js';
+
+test('reuseHandleLine: key + id', () => {
+  assert.equal(reuseHandleLine({ key: 'abc', id: '1:2' }),
+    'Reuse: import existing — key `abc` · node `1:2`');
+});
+test('reuseHandleLine: id only', () => {
+  assert.equal(reuseHandleLine({ id: '1:2' }), 'Reuse: import existing — node `1:2`');
+});
+test('reuseHandleLine: neither → null', () => {
+  assert.equal(reuseHandleLine({}), null);
+  assert.equal(reuseHandleLine(), null);
+});
+
+test('generateDesignMd components section emits the Reuse line', () => {
+  const pages = [{ id: '1:1', name: 'P', nodeCount: 1, frames: [
+    { t: 'COMPONENT_SET', n: 'Button', vp: { Size: { values: ['S', 'M'] } },
+      kidCount: 2, key: 'abc123', id: '10:5', kids: [{ t: 'COMPONENT', n: 'Size=S' }] },
+  ] }];
+  const md = generateDesignMd({ fileName: 'F', date: '2026-06-16', pages }, { sections: ['components'] });
+  assert.match(md, /Reuse: import existing — key `abc123` · node `10:5`/);
+});

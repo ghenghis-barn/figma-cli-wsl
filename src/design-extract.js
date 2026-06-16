@@ -328,6 +328,18 @@ export function variantMatrixTable(props) {
   return ['| Property | Values |', '|---|---|', ...rows].join('\n');
 }
 
+/**
+ * Reuse handle markdown line for a component census entry. Pure.
+ * Returns the line, or null when there is no handle to emit.
+ */
+export function reuseHandleLine({ key, id } = {}) {
+  const parts = [];
+  if (key) parts.push(`key \`${key}\``);
+  if (id) parts.push(`node \`${id}\``);
+  if (!parts.length) return null;
+  return `Reuse: import existing — ${parts.join(' · ')}`;
+}
+
 // ============ Markdown writer ============
 
 export const ALL_SECTIONS = [
@@ -440,6 +452,8 @@ export function generateDesignMd(extraction, options = {}) {
       for (const cs of census.componentSets) {
         out.push(`### ${cs.name}`, '');
         out.push(`Page: ${cs.page} · ${cs.variants} variants`, '');
+        const reuse = reuseHandleLine({ key: cs.key, id: cs.id });
+        if (reuse) out.push(reuse, '');
         out.push(variantMatrixTable(cs.props), '');
         if (cs.sample) {
           out.push('Sample variant structure:', '');
