@@ -31,9 +31,7 @@ You don't run commands or write code. You open **Claude** in this project and sa
 
 Claude does the rest. Figma updates in real time, in front of you.
 
-It works with real, editable Figma , actual frames, components, variants and variables , not a flat image. And it runs **locally**: no API key, nothing sent to a cloud service.
-
-**No rate limits.** MCP-based tools talk to Figma through the REST API, which is rate-limited. Figma's official MCP server caps read tool calls by seat: just 6/month on a View/Collab seat, and 200–600/day (10–20/min) even on a paid Dev/Full seat ([source](https://developers.figma.com/docs/figma-mcp-server/rate-limits-access)). AI agents burn through those fast. figma-cli connects to Figma Desktop directly over CDP and never calls the API, so there's nothing to rate-limit. No token, no 429, works offline.
+It works with real, editable Figma , actual frames, components, variants and variables , not a flat image. And it runs **locally**: no API key, nothing sent to a cloud service. No rate limits either ([why](#figma-cli-vs-the-mcp-servers-the-question-i-get-asked-most)).
 
 ---
 
@@ -130,12 +128,12 @@ People keep asking how figma-cli differs from **Figma's official MCP** and from 
 |---|---|---|
 | **How it connects** | CDP → your local Figma Desktop | Figma REST API (cloud) |
 | **Figma token** | not needed | required (`figd_…`) |
-| **Figma rate limit** | **none** — there are no API calls to throttle | yes — can bottleneck heavy automation / AI on Free or Starter plans |
+| **Figma rate limit** | **none** (no API calls to throttle) | yes (as low as 6 read calls/month per seat) |
 | **Works offline** | yes | no |
 | **Setup** | one `connect` command | token + plugin/bridge + (for some) port wrangling |
 
 ### Why "no rate limit" is a real, structural advantage
-Figma's APIs are rate-limited, and on Free or Starter plans those limits can become a bottleneck for large-scale automation or AI workflows. Any tool built on that API — Figma's own MCP included — runs into the same ceiling. figma-cli sidesteps it entirely because it never calls the API: it drives Figma Desktop locally over CDP.
+Figma's APIs are rate-limited, and any tool built on them (Figma's official MCP included) runs into the same ceiling. The official MCP caps the tools that *read* from Figma by seat: just **6 calls per month** on a View/Collab seat, and **200 to 600 per day** (10 to 20 per minute) even on a paid Dev/Full seat ([source](https://developers.figma.com/docs/figma-mcp-server/rate-limits-access)). AI agents read constantly, so they burn through those fast, then sit in 429 cooldowns. figma-cli sidesteps all of it because it never calls the API: it drives Figma Desktop locally over CDP. No token, no 429, works offline.
 
 ### The quieter advantage: it costs your AI far fewer tokens
 figma-cli's commands are terse and there are **no large tool schemas loaded into the AI's context**. Driving an MCP server, by contrast, loads its instructions + dozens of tool schemas and returns verbose JSON. Measured like-for-like in one session (tokens ≈ bytes ÷ 4, approximate):
