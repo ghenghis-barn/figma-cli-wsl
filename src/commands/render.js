@@ -5,6 +5,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { FigmaClient } from '../figma-client.js';
+import { ensureCdpBridge, getCdpUrl } from '../figma-patch.js';
 import { getFigmaVersion, isFigmaRunning, platformName } from '../platform.js';
 import {
   program,
@@ -653,14 +654,15 @@ program
 
     // 5. Remote debugging port
     try {
-      const response = await fetch('http://127.0.0.1:9222/json/version', { signal: AbortSignal.timeout(2000) });
+      ensureCdpBridge();
+      const response = await fetch(`${getCdpUrl()}/json/version`, { signal: AbortSignal.timeout(2000) });
       if (response.ok) {
-        console.log(chalk.green('✓ Remote debugging enabled (port 9222)'));
+        console.log(chalk.green(`✓ Remote debugging enabled (${getCdpUrl()})`));
       } else {
         console.log(chalk.red('✗ Remote debugging port not responding'));
       }
     } catch {
-      console.log(chalk.red('✗ Remote debugging not available (port 9222 closed)'));
+      console.log(chalk.red(`✗ Remote debugging not available (${getCdpUrl()})`));
       console.log(chalk.gray('  → Run: node src/index.js connect'));
     }
 
@@ -691,4 +693,3 @@ program
 
     console.log('');
   });
-

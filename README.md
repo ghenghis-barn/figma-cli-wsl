@@ -110,6 +110,18 @@ figma-ds-cli talks to your Figma Desktop in one of two ways. Claude picks one du
 - "Yolo" sounds scary, but it's **safe and undoable** , Claude can un-patch it anytime, and nothing ever leaves your machine.
 - Just tell Claude *"connect to Figma"* and you're done.
 
+#### WSL on Windows
+
+When the CLI runs inside WSL and Figma Desktop runs on Windows, Yolo Mode patches and launches the Windows Figma install. The CLI also tries to create a Windows-originated reverse SSH tunnel so WSL can read Figma's local CDP port without relying on WSL-to-Windows outbound TCP.
+
+If automatic tunnelling does not come up, make sure Windows can SSH into the WSL distro. The bridge automatically uses `%USERPROFILE%\.ssh\figma_cli_wsl_ed25519` when that key exists. You can also set the target explicitly:
+
+```bash
+FIGMA_WSL_SSH_TARGET=ubuntu@<wsl-ip> figma-cli connect
+```
+
+You can disable the automatic tunnel attempt with `FIGMA_WSL_CDP_TUNNEL=0`, or point CDP elsewhere with `FIGMA_CDP_HOST` and `FIGMA_CDP_PORT`.
+
 ### 🛡️ Safe Mode , no changes to the Figma app
 - **Doesn't touch the Figma app at all.** Instead it uses a tiny built-in Figma plugin.
 - You run it once from Figma's **Plugins → Development → FigCli** and keep that plugin open while you work.

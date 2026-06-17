@@ -9,8 +9,14 @@ import { readFileSync, writeFileSync, accessSync, constants } from 'fs';
 import { execSync } from 'child_process';
 import {
   getAsarPath as platformGetAsarPath,
+  ensureCdpBridge as platformEnsureCdpBridge,
+  getCdpBridgeCommand as platformGetCdpBridgeCommand,
+  getCdpHost as platformGetCdpHost,
+  getCdpUrl as platformGetCdpUrl,
   getFigmaBinaryPath as platformGetFigmaBinaryPath,
-  getFigmaCommand as platformGetFigmaCommand
+  getFigmaCommand as platformGetFigmaCommand,
+  isWsl as platformIsWsl,
+  rewriteCdpWebSocketUrl as platformRewriteCdpWebSocketUrl
 } from './platform.js';
 
 // Fixed CDP port (figma-use has 9222 hardcoded)
@@ -21,6 +27,30 @@ const CDP_PORT = 9222;
  */
 export function getCdpPort() {
   return CDP_PORT;
+}
+
+export function getCdpHost() {
+  return platformGetCdpHost();
+}
+
+export function getCdpUrl() {
+  return platformGetCdpUrl(CDP_PORT);
+}
+
+export function rewriteCdpWebSocketUrl(wsUrl) {
+  return platformRewriteCdpWebSocketUrl(wsUrl, CDP_PORT);
+}
+
+export function ensureCdpBridge() {
+  return platformEnsureCdpBridge(CDP_PORT);
+}
+
+export function getCdpBridgeCommand() {
+  return platformGetCdpBridgeCommand(CDP_PORT);
+}
+
+export function isWsl() {
+  return platformIsWsl();
 }
 
 // The string that blocks remote debugging
@@ -181,5 +211,11 @@ export default {
   unpatchFigma,
   getFigmaCommand,
   getFigmaBinaryPath,
-  getCdpPort
+  getCdpPort,
+  getCdpHost,
+  getCdpUrl,
+  rewriteCdpWebSocketUrl,
+  ensureCdpBridge,
+  getCdpBridgeCommand,
+  isWsl
 };

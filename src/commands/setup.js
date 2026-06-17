@@ -14,8 +14,10 @@ import {
   DAEMON_PORT,
   figmaUse,
   getDaemonToken,
+  getManualCdpBridgeCommand,
   getManualStartCommand,
   isDaemonRunning,
+  isWsl,
   killFigma,
   loadConfig,
   pkg,
@@ -644,31 +646,62 @@ program
     // Stop any existing daemon
     stopDaemon();
 
-    console.log(chalk.blue('Starting Figma...'));
+    let connected = false;
+
+    const existingSpinner = ora('Checking for existing Figma session...').start();
     try {
-      killFigma();
-      await new Promise(r => setTimeout(r, 500));
+      if (await FigmaClient.isConnected()) {
+        const statusResult = figmaUse('status', { silent: true });
+        if (statusResult && statusResult.includes('Connected')) {
+          existingSpinner.succeed('Connected to running Figma');
+          console.log(chalk.gray(statusResult.trim()));
+          connected = true;
+        }
+      }
     } catch {}
 
-    startFigma();
-    console.log(chalk.green('✓ Figma started\n'));
+    if (!connected) {
+      existingSpinner.stop();
+      console.log(chalk.blue('Starting Figma...'));
+      try {
+        killFigma();
+        await new Promise(r => setTimeout(r, 500));
+      } catch {}
 
-    // Wait and check connection
-    const spinner = ora('Waiting for connection...').start();
-    let connected = false;
-    for (let i = 0; i < 8; i++) {
-      await new Promise(r => setTimeout(r, 1000));
-      const result = figmaUse('status', { silent: true });
-      if (result && result.includes('Connected')) {
-        spinner.succeed('Connected to Figma');
-        console.log(chalk.gray(result.trim()));
-        connected = true;
-        break;
+      startFigma();
+      console.log(chalk.green('✓ Figma started\n'));
+
+      // Wait and check connection
+      const spinner = ora('Waiting for connection...').start();
+      for (let i = 0; i < 8; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        const result = figmaUse('status', { silent: true });
+        if (result && result.includes('Connected')) {
+          spinner.succeed('Connected to Figma');
+          console.log(chalk.gray(result.trim()));
+          connected = true;
+          break;
+        }
+      }
+
+      if (!connected) {
+        spinner.warn('Open a file in Figma to connect');
+        if (isWsl()) {
+          console.log(chalk.gray('\n  WSL Yolo Mode uses a Windows-originated reverse CDP tunnel.'));
+          console.log(chalk.gray('  If the tunnel was not created automatically, run:'));
+          console.log(chalk.cyan('  ' + getManualCdpBridgeCommand()));
+          console.log(chalk.gray('  Override the SSH target with FIGMA_WSL_SSH_TARGET if needed.\n'));
+        }
+        return;
       }
     }
 
     if (!connected) {
-      spinner.warn('Open a file in Figma to connect');
+      if (isWsl()) {
+        console.log(chalk.yellow('Could not connect to Figma through the WSL CDP bridge.'));
+        console.log(chalk.gray('Manual bridge command:'));
+        console.log(chalk.cyan('  ' + getManualCdpBridgeCommand()));
+      }
       return;
     }
 
@@ -686,4 +719,3 @@ program
       daemonSpinner.warn('Daemon failed: ' + e.message);
     }
   });
-

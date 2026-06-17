@@ -6,7 +6,7 @@
  */
 
 import WebSocket from 'ws';
-import { getCdpPort } from './figma-patch.js';
+import { ensureCdpBridge, getCdpUrl, rewriteCdpWebSocketUrl } from './figma-patch.js';
 
 /**
  * Visible fallback colors for shadcn semantic token names (Zinc light theme).
@@ -64,12 +64,17 @@ export class FigmaClient {
    * List all available Figma pages
    */
   static async listPages() {
-    const port = getCdpPort();
-    const response = await fetch(`http://localhost:${port}/json`);
+    ensureCdpBridge();
+    const response = await fetch(`${getCdpUrl()}/json`);
     const pages = await response.json();
     return pages
       .filter(p => p.url && p.url.includes('figma.com'))
-      .map(p => ({ title: p.title, id: p.id, url: p.url, wsUrl: p.webSocketDebuggerUrl }));
+      .map(p => ({
+        title: p.title,
+        id: p.id,
+        url: p.url,
+        wsUrl: rewriteCdpWebSocketUrl(p.webSocketDebuggerUrl)
+      }));
   }
 
   /**
@@ -77,8 +82,8 @@ export class FigmaClient {
    */
   static async isConnected() {
     try {
-      const port = getCdpPort();
-      const response = await fetch(`http://localhost:${port}/json`);
+      ensureCdpBridge();
+      const response = await fetch(`${getCdpUrl()}/json`);
       const pages = await response.json();
       return pages.some(p => p.url && p.url.includes('figma.com'));
     } catch {
@@ -90,8 +95,8 @@ export class FigmaClient {
    * Connect to a Figma design file
    */
   async connect(pageTitle = null, { timeoutMs = 15000 } = {}) {
-    const port = getCdpPort();
-    const response = await fetch(`http://localhost:${port}/json`);
+    ensureCdpBridge();
+    const response = await fetch(`${getCdpUrl()}/json`);
     const pages = await response.json();
 
     // Find design/file pages (not feed, home, etc.)
@@ -118,7 +123,7 @@ export class FigmaClient {
     this.fileType = typeMatch ? typeMatch[1] : 'unknown';
 
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(page.webSocketDebuggerUrl);
+      this.ws = new WebSocket(rewriteCdpWebSocketUrl(page.webSocketDebuggerUrl));
       const executionContexts = [];
 
       this.ws.on('open', async () => {

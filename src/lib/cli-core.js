@@ -14,7 +14,18 @@ import { createServer } from 'http';
 import { FigJamClient } from '../figjam-client.js';
 import { FigmaClient } from '../figma-client.js';
 import * as apiDocs from '../api-docs.js';
-import { isPatched, patchFigma, unpatchFigma, getFigmaCommand, getCdpPort, getFigmaBinaryPath } from '../figma-patch.js';
+import {
+  ensureCdpBridge,
+  getCdpBridgeCommand,
+  getCdpPort,
+  getCdpUrl,
+  getFigmaBinaryPath,
+  getFigmaCommand,
+  isPatched,
+  isWsl,
+  patchFigma,
+  unpatchFigma
+} from '../figma-patch.js';
 import { listComponents, getComponent, getAllComponents, VISUAL_COMPONENTS } from '../shadcn.js';
 import { listBlocks, getBlock } from '../blocks/index.js';
 import { extractGradient, extractMesh, buildMeshFromColors, buildFigmaPaint, buildCssString } from '../gradient-extractor.js';
@@ -491,6 +502,7 @@ function startFigma() {
   const port = getCdpPort();
   const figmaPath = getFigmaPath();
   startFigmaApp(figmaPath, port);
+  ensureCdpBridge();
 }
 
 function killFigma() {
@@ -500,6 +512,10 @@ function killFigma() {
 function getManualStartCommand() {
   // Use centralized command from figma-patch.js
   return getFigmaCommand(getCdpPort());
+}
+
+function getManualCdpBridgeCommand() {
+  return getCdpBridgeCommand();
 }
 
 // NOTE: this file lives in src/lib/ — keep __dirname pointing at src/ so
@@ -671,8 +687,8 @@ function figmaUse(args, options = {}) {
 
   if (args === 'status' || args.startsWith('status')) {
     try {
-      const port = getCdpPort();
-      const result = execSync(`curl -s http://localhost:${port}/json`, { encoding: 'utf8', stdio: 'pipe' });
+      ensureCdpBridge();
+      const result = execSync(`curl -s ${getCdpUrl()}/json`, { encoding: 'utf8', stdio: 'pipe' });
       const pages = JSON.parse(result);
       const figmaPage = pages.find(p => p.url?.includes('figma.com/design') || p.url?.includes('figma.com/file'));
       if (figmaPage) {
@@ -788,8 +804,8 @@ function checkConnectionSync() {
 
   // Fallback: check CDP directly
   try {
-    const port = getCdpPort();
-    execSync(`curl -s http://localhost:${port}/json`, { stdio: 'pipe', timeout: 2000 });
+    ensureCdpBridge();
+    execSync(`curl -s ${getCdpUrl()}/json`, { stdio: 'pipe', timeout: 2000 });
     return true;
   } catch {
     console.log(chalk.red('\n✗ Not connected to Figma\n'));
@@ -949,6 +965,7 @@ export {
   getDaemonToken,
   getFigmaClient,
   getFigmaPath,
+  getManualCdpBridgeCommand,
   getManualStartCommand,
   getTokenStatus,
   getVarName,
@@ -956,6 +973,7 @@ export {
   hexToRgb,
   isDaemonRunning,
   isFigmaPatched,
+  isWsl,
   isInSafeMode,
   isVarRef,
   killFigma,
