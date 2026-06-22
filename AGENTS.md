@@ -20,6 +20,23 @@ figma-cli controls Figma Desktop directly. Open Figma Desktop, then run
 5. After creating or materially editing canvas content, verify with
    `figma-cli verify "<id>" --measure`. Save screenshots to `/tmp` when useful.
 
+## Layout Hierarchy
+
+- Prefer structured Auto Layout for UI hierarchy wherever practical. Use
+  `flex="row"` / `flex="col"`, `gap`, padding, `w="fill"`, `w="hug"` and
+  alignment props so Figma owns spacing, wrapping and resizing.
+- Use regular frames for meaningful containers, surfaces and grouping even when
+  their children need manual placement. Frames should carry fills, strokes,
+  clipping and naming instead of relying on loose background shapes.
+- Use absolute positioning only when precision placement is the point of the
+  artifact, such as diagrams, illustrations, charts, annotations, overlays or
+  intentionally layered compositions. Do not use manual `x`/`y` placement for
+  ordinary cards, lists, forms, nav, tables or page structure when Auto Layout
+  can express the relationship.
+- When editing existing canvas content, preserve intentional absolute layouts
+  for diagrammatic or illustrative regions, but convert routine UI stacks and
+  repeated rows/cards to Auto Layout where it improves maintainability.
+
 ## Editing Existing Figma Files
 
 - If an existing rectangle is acting as a background/container for text or child
