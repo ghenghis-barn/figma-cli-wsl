@@ -819,7 +819,7 @@ function checkConnectionSync() {
 // Helper: Check if Figma is patched
 function isFigmaPatched() {
   const config = loadConfig();
-  return config.patched === true;
+  return config.patched === true && isPatched() !== false;
 }
 
 // Helper: Hex to Figma RGB (handles both #RGB and #RRGGBB)

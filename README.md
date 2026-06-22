@@ -114,13 +114,15 @@ figma-ds-cli talks to your Figma Desktop in one of two ways. Claude picks one du
 
 When the CLI runs inside WSL and Figma Desktop runs on Windows, Yolo Mode patches and launches the Windows Figma install. The CLI also tries to create a Windows-originated reverse SSH tunnel so WSL can read Figma's local CDP port without relying on WSL-to-Windows outbound TCP.
 
+Figma itself listens on Windows `127.0.0.1:9222`, but WSL should not also bind its local side of the bridge to `9222`. If both sides use `9222`, WSL's localhost relay can claim Windows `9222` before Figma does, producing empty CDP responses instead of `/json/version`. For that reason, the WSL bridge defaults to `127.0.0.1:39222` inside WSL while forwarding to Windows Figma on `127.0.0.1:9222`.
+
 If automatic tunnelling does not come up, make sure Windows can SSH into the WSL distro. The bridge automatically uses `%USERPROFILE%\.ssh\figma_cli_wsl_ed25519` when that key exists. You can also set the target explicitly:
 
 ```bash
 FIGMA_WSL_SSH_TARGET=ubuntu@<wsl-ip> figma-cli connect
 ```
 
-You can disable the automatic tunnel attempt with `FIGMA_WSL_CDP_TUNNEL=0`, or point CDP elsewhere with `FIGMA_CDP_HOST` and `FIGMA_CDP_PORT`.
+You can disable the automatic tunnel attempt with `FIGMA_WSL_CDP_TUNNEL=0`, or point CDP elsewhere with `FIGMA_CDP_HOST` and `FIGMA_CDP_PORT`. If you override `FIGMA_CDP_PORT` in WSL, keep it different from Figma's Windows-side `9222` unless you have also disabled Windows localhost forwarding for that port.
 
 ### 🛡️ Safe Mode , no changes to the Figma app
 - **Doesn't touch the Figma app at all.** Instead it uses a tiny built-in Figma plugin.

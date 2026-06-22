@@ -20,10 +20,15 @@ terminal. Open Figma Desktop, then \`figma-cli connect\` once per session.
 ## Golden rules
 1. **Create frames with \`render\` / \`render-batch\`** — they have smart positioning.
    NEVER use \`eval\` to create visual nodes (no positioning, bypasses guards).
-2. **"N buttons/cards" = N separate top-level nodes**, not one wrapper frame
+2. **Use frames for structural surfaces.** Cards, panels, tags, pills, callouts,
+   bottom bands and page/slide backgrounds should be frames with fills/strokes,
+   not standalone rectangles sitting behind content. Use the parent frame's fill
+   for a full-page background. Rectangles are fine for simple decorative bars,
+   dividers, progress segments or literal vector geometry.
+3. **"N buttons/cards" = N separate top-level nodes**, not one wrapper frame
    containing N children. Use \`render-batch '[...]'\` or \`shadcn add <c> --count N\`.
-3. **Never delete the user's existing nodes.**
-4. After creating, **verify**: \`figma-cli verify "<id>" --measure\` (returns a
+4. **Never delete the user's existing nodes.**
+5. After creating, **verify**: \`figma-cli verify "<id>" --measure\` (returns a
    screenshot + real w/h so you catch size bugs by numbers, not by eye).
 
 ## Design tokens / variables
@@ -44,6 +49,17 @@ terminal. Open Figma Desktop, then \`figma-cli connect\` once per session.
 ## Text wrapping (most common bug)
 For text to wrap, the parent AND every \`<Text>\` need \`w="fill"\`, and the parent
 needs \`flex="col"\` or \`flex="row"\`.
+
+## Editing existing Figma files
+- If an existing rectangle is acting as a background/container for text or child
+  UI, convert it to a frame where practical, preserving fills, strokes, size and
+  absolute position. Reparent the related text/children into that frame so the
+  layer hierarchy matches the visual structure.
+- Do not convert purely decorative rectangles such as thin chapter indicators,
+  dividers, chart bars or other literal shapes unless they need to contain
+  other nodes.
+- \`eval\` is acceptable for mutating existing nodes or making hierarchy fixes
+  when no safer CLI command exists; keep it scoped and verify the result.
 
 ## Recreating a component from an extracted DESIGN.md (hard rule)
 Don't read the structure markdown by hand. Use:

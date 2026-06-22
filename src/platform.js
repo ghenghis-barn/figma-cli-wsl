@@ -8,6 +8,7 @@ import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const PLATFORM = process.platform;
+const WSL_DEFAULT_LOCAL_CDP_PORT = 39222;
 let wslCdpTunnelLastAttempt = 0;
 
 // --- Null device ---
@@ -237,7 +238,17 @@ function buildWindowsSshReverseTunnelCommand(port) {
 }
 
 function getLocalCdpPort(port) {
-  return parseInt(process.env.FIGMA_CDP_PORT || String(port), 10);
+  if (process.env.FIGMA_CDP_PORT) {
+    return parseInt(process.env.FIGMA_CDP_PORT, 10);
+  }
+
+  // In WSL, using the same local port as Windows Figma can create a loop:
+  // WSL's localhost relay binds Windows 9222 before Figma does, so CDP returns
+  // empty replies. Keep Windows Figma on 9222 but expose it inside WSL on a
+  // separate bridge port by default.
+  if (isWsl()) return WSL_DEFAULT_LOCAL_CDP_PORT;
+
+  return parseInt(String(port), 10);
 }
 
 export function getCdpHost() {

@@ -9,9 +9,15 @@
 └─────────────────┘                           └─────────────────┘
 ```
 
+In WSL-on-Windows, the same CDP link uses a split-port bridge:
+
+```
+WSL CLI → 127.0.0.1:39222 → Windows reverse SSH tunnel → Windows Figma 127.0.0.1:9222
+```
+
 ### Technology Stack
 
-1. **Chrome DevTools Protocol (CDP)**: Figma Desktop is an Electron app with a Chromium runtime. We connect via CDP on port 9222.
+1. **Chrome DevTools Protocol (CDP)**: Figma Desktop is an Electron app with a Chromium runtime. We connect via CDP on port 9222. In WSL, Figma still listens on Windows port 9222, but the Linux side of the bridge defaults to port 39222 to avoid WSL localhost relay collisions.
 
 2. **figma-use**: The underlying library that handles CDP connection and JavaScript execution. Our CLI wraps this.
 
@@ -22,8 +28,16 @@
 1. User runs `figma-ds-cli connect`
 2. CLI patches Figma to enable remote debugging (adds `--remote-debugging-port=9222` flag)
 3. Figma restarts with debugging enabled
-4. CLI connects via WebSocket to `localhost:9222`
+4. CLI connects via WebSocket to `localhost:9222`, or to the WSL bridge port `localhost:39222` when Figma is running on Windows
 5. Commands are executed as JavaScript in Figma's context
+
+### WSL CDP Bridge Invariant
+
+Do not bind both sides of the WSL bridge to `9222`. Windows Figma must own Windows `127.0.0.1:9222`; WSL should use a separate local port, currently `39222`, and forward that to Windows `9222`.
+
+If the bridge uses `-R 127.0.0.1:9222:127.0.0.1:9222`, WSL's localhost relay can appear on Windows as the listener for `9222`. Figma then launches with `--remote-debugging-port=9222` but cannot serve CDP there, and CLI probes see hangs or empty replies from `/json/version`.
+
+The saved `config.patched` flag is only advisory. Figma auto-updates can replace `app.asar`, so Yolo connection setup must recheck the active install with `isPatched()` before deciding whether to skip patching.
 
 ### Key Files
 

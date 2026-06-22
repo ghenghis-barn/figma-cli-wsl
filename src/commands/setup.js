@@ -602,11 +602,12 @@ program
     // Yolo Mode: CDP-based connection (default)
     console.log(chalk.hex('#FF6B35')('  🚀 Yolo Mode ') + chalk.gray('(direct CDP connection)\n'));
 
-    // Patch Figma if needed
-    if (!config.patched) {
+    // Patch Figma if needed. Treat the saved config as advisory only: Figma
+    // auto-updates can replace app.asar and invalidate a previous patch.
+    const patchStatus = isPatched();
+    if (!config.patched || patchStatus === false) {
       const patchSpinner = ora('Setting up Figma connection...').start();
       try {
-        const patchStatus = isPatched();
         if (patchStatus === true) {
           patchSpinner.succeed('Figma ready');
         } else if (patchStatus === false) {

@@ -19,7 +19,9 @@ import {
   rewriteCdpWebSocketUrl as platformRewriteCdpWebSocketUrl
 } from './platform.js';
 
-// Fixed CDP port (figma-use has 9222 hardcoded)
+// Fixed Figma-side CDP port (figma-use has 9222 hardcoded). In WSL, the
+// Windows Figma process still listens on 9222, but platform.js exposes it to
+// Linux on a separate local bridge port to avoid WSL localhost relay loops.
 const CDP_PORT = 9222;
 
 /**
