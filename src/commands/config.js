@@ -21,6 +21,16 @@ const configCmd = program
   .command('config')
   .description('Manage configuration');
 
+function isSecretKey(key) {
+  return /token|secret|passcode|password|key/i.test(key);
+}
+
+function displayConfigValue(key, value, { raw = false } = {}) {
+  if (!isSecretKey(key) || raw) return value;
+  if (!value) return value;
+  return '<redacted>';
+}
+
 configCmd
   .command('set <key> <value>')
   .description('Set a config value (e.g., removebgApiKey)')
@@ -28,16 +38,18 @@ configCmd
     const config = loadConfig();
     config[key] = value;
     saveConfig(config);
-    console.log(chalk.green('✓ Config saved: ') + chalk.gray(key + ' = ' + value.substring(0, 10) + '...'));
+    const displayValue = displayConfigValue(key, value);
+    console.log(chalk.green('✓ Config saved: ') + chalk.gray(key + ' = ' + displayValue));
   });
 
 configCmd
   .command('get <key>')
   .description('Get a config value')
-  .action((key) => {
+  .option('--raw', 'Print secret values without redaction')
+  .action((key, options) => {
     const config = loadConfig();
     if (config[key]) {
-      console.log(config[key]);
+      console.log(displayConfigValue(key, config[key], { raw: options.raw }));
     } else {
       console.log(chalk.gray('Not set'));
     }
@@ -292,4 +304,3 @@ return 'Auto-layout frame created at (' + smartX + ', ${options.y})';
     const result = await daemonExec('eval', { code });
     console.log(result);
   });
-

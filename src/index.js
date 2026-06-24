@@ -20,6 +20,7 @@ import './commands/a11y.js';
 import './commands/node-ops.js';
 import './commands/slots.js';
 import './commands/figjam.js';
+import './commands/comments-webhooks.js';
 import './commands/variants.js';
 import './commands/misc.js';
 import './commands/extract.js';

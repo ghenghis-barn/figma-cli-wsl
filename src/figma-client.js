@@ -39,6 +39,20 @@ const SEMANTIC_VAR_DEFAULTS = {
   ring: { r: 0.094, g: 0.094, b: 0.106 },
 };
 
+async function fetchCdpJson(path, timeoutMs = 5000) {
+  if (!ensureCdpBridge()) {
+    throw new Error('Could not establish the WSL CDP bridge to Figma.');
+  }
+
+  const options = {};
+  if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+    options.signal = AbortSignal.timeout(timeoutMs);
+  }
+
+  const response = await fetch(`${getCdpUrl()}${path}`, options);
+  return response.json();
+}
+
 export class FigmaClient {
   constructor() {
     this.ws = null;
@@ -64,9 +78,7 @@ export class FigmaClient {
    * List all available Figma pages
    */
   static async listPages() {
-    ensureCdpBridge();
-    const response = await fetch(`${getCdpUrl()}/json`);
-    const pages = await response.json();
+    const pages = await fetchCdpJson('/json');
     return pages
       .filter(p => p.url && p.url.includes('figma.com'))
       .map(p => ({
@@ -82,9 +94,7 @@ export class FigmaClient {
    */
   static async isConnected() {
     try {
-      ensureCdpBridge();
-      const response = await fetch(`${getCdpUrl()}/json`);
-      const pages = await response.json();
+      const pages = await fetchCdpJson('/json', 3000);
       return pages.some(p => p.url && p.url.includes('figma.com'));
     } catch {
       return false;
@@ -95,9 +105,7 @@ export class FigmaClient {
    * Connect to a Figma design file
    */
   async connect(pageTitle = null, { timeoutMs = 15000 } = {}) {
-    ensureCdpBridge();
-    const response = await fetch(`${getCdpUrl()}/json`);
-    const pages = await response.json();
+    const pages = await fetchCdpJson('/json', Math.min(timeoutMs, 5000));
 
     // Find design/file pages (not feed, home, etc.)
     // Use regex with trailing slash to avoid matching /files/ (feed/home pages)

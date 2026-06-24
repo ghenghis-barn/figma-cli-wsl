@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+- Cloud-backed `comments` and `webhooks` command groups for Figma REST comments
+  and Webhooks V2.
+- `webhooks watch` can run a local receiver subprocess, open an ngrok or
+  localtunnel HTTPS tunnel, auto-register the Figma webhook, verify public
+  `/health`, stream events, persist JSONL logs, and clean up temporary webhooks
+  with `--once --delete-on-stop`.
+- Configured token-like values are redacted by default in `figma-cli config get`.
+
+### Changed
+
+- WSL CDP bridge setup now cleans stale reverse SSH listeners, uses a distinct
+  local bridge port, and can provision a Windows-originated SSH key for the
+  reverse tunnel path.
+
 ## 1.2.0 (2026-06-10)
 
 ### New

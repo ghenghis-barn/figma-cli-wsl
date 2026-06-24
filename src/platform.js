@@ -4,7 +4,7 @@
  */
 
 import { execFileSync, execSync, spawn } from 'child_process';
-import { existsSync, readFileSync, readdirSync } from 'fs';
+import { appendFileSync, chmodSync, existsSync, mkdirSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 const PLATFORM = process.platform;
@@ -170,11 +170,12 @@ function findWindowsFigmaExeWsl() {
 
 function canReachCdp(port) {
   try {
-    execSync(`curl -fsS --max-time 0.5 http://127.0.0.1:${port}/json/version`, {
+    const out = execSync(`curl -fsS --connect-timeout 0.5 --max-time 1.5 http://127.0.0.1:${port}/json/version`, {
       encoding: 'utf8',
       stdio: 'pipe'
     });
-    return true;
+    const parsed = JSON.parse(out);
+    return Boolean(parsed?.Browser || parsed?.['Protocol-Version'] || parsed?.webSocketDebuggerUrl);
   } catch {
     return false;
   }
@@ -211,6 +212,82 @@ function waitForCdp(port, timeoutMs = 1500) {
   return false;
 }
 
+function getWindowsBridgeKeyPath() {
+  const userProfile = getWindowsUserProfileFromWsl();
+  return userProfile ? `${userProfile}\\.ssh\\figma_cli_wsl_ed25519` : null;
+}
+
+function ensureWindowsToWslSshKey() {
+  if (!isWsl()) return true;
+  if (process.env.FIGMA_WSL_SSH_KEY_SETUP === '0') return true;
+
+  const keyPath = getWindowsBridgeKeyPath();
+  if (!keyPath) return false;
+
+  const keyPathWsl = windowsPathToWslPath(keyPath);
+  const pubPathWsl = `${keyPathWsl}.pub`;
+
+  try {
+    if (!existsSync(keyPathWsl) || !existsSync(pubPathWsl)) {
+      runPowerShell(`
+        $ErrorActionPreference = 'Stop'
+        $dir = Split-Path -Parent ${psQuote(keyPath)}
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        if (!(Test-Path ${psQuote(keyPath)})) {
+          & ssh-keygen.exe -t ed25519 -N '' -C 'figma-cli-wsl' -f ${psQuote(keyPath)} | Out-Null
+        }
+      `);
+    }
+
+    if (!existsSync(pubPathWsl)) return false;
+
+    const publicKey = readFileSync(pubPathWsl, 'utf8').trim();
+    if (!publicKey) return false;
+
+    const sshDir = join(process.env.HOME || '.', '.ssh');
+    const authorizedKeys = join(sshDir, 'authorized_keys');
+    mkdirSync(sshDir, { recursive: true, mode: 0o700 });
+
+    let existing = '';
+    try {
+      existing = readFileSync(authorizedKeys, 'utf8');
+    } catch {}
+
+    if (!existing.includes(publicKey)) {
+      appendFileSync(authorizedKeys, `${existing.endsWith('\n') || !existing ? '' : '\n'}${publicKey}\n`, { mode: 0o600 });
+    }
+
+    try { chmodSync(sshDir, 0o700); } catch {}
+    try { chmodSync(authorizedKeys, 0o600); } catch {}
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function stopWindowsSshReverseTunnels(port) {
+  if (!isWsl()) return;
+  const localPort = getLocalCdpPort(port);
+  const reverse = `127.0.0.1:${localPort}:127.0.0.1:${port}`;
+  try {
+    runPowerShell(`
+      $needle = ${psQuote(reverse)}
+      Get-CimInstance Win32_Process -Filter "Name = 'ssh.exe'" |
+        Where-Object { $_.CommandLine -like "*$needle*" } |
+        ForEach-Object {
+          try { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue } catch {}
+        }
+    `);
+  } catch {}
+}
+
+function cleanupCdpBridge(port) {
+  const localPort = getLocalCdpPort(port);
+  stopWindowsSshReverseTunnels(port);
+  try { killPort(localPort); } catch {}
+  try { execSync('sleep 0.3', { stdio: 'ignore' }); } catch {}
+}
+
 function buildWindowsSshReverseTunnelCommand(port) {
   const target = getWslSshTarget();
   const localPort = getLocalCdpPort(port);
@@ -218,20 +295,19 @@ function buildWindowsSshReverseTunnelCommand(port) {
   const args = [
     '-N',
     '-o', 'ExitOnForwardFailure=yes',
-    '-o', 'ServerAliveInterval=30',
+    '-o', 'ServerAliveInterval=15',
+    '-o', 'ServerAliveCountMax=2',
+    '-o', 'ConnectTimeout=5',
     '-o', 'BatchMode=yes',
     '-o', 'IdentitiesOnly=yes',
     '-o', 'StrictHostKeyChecking=accept-new',
     '-R', reverse,
     target
   ];
-  const userProfile = getWindowsUserProfileFromWsl();
-  if (userProfile) {
-    const keyPath = `${userProfile}\\.ssh\\figma_cli_wsl_ed25519`;
-    if (existsSync(windowsPathToWslPath(keyPath))) {
-      const reverseIndex = args.indexOf('-R');
-      args.splice(reverseIndex >= 0 ? reverseIndex : args.length - 2, 0, '-i', keyPath);
-    }
+  const keyPath = getWindowsBridgeKeyPath();
+  if (keyPath && existsSync(windowsPathToWslPath(keyPath))) {
+    const reverseIndex = args.indexOf('-R');
+    args.splice(reverseIndex >= 0 ? reverseIndex : args.length - 2, 0, '-i', keyPath);
   }
   const psArgs = args.map(psQuote).join(', ');
   return `Start-Process -FilePath 'ssh.exe' -ArgumentList @(${psArgs}) -WindowStyle Hidden`;
@@ -281,11 +357,19 @@ export function getCdpBridgeCommand(port) {
 export function ensureCdpBridge(port) {
   if (!isWsl()) return true;
   if (process.env.FIGMA_WSL_CDP_TUNNEL === '0') return false;
-  if (canReachCdp(getLocalCdpPort(port))) return true;
+  const localPort = getLocalCdpPort(port);
+  if (canReachCdp(localPort)) return true;
+
+  // A dead reverse SSH session can leave a local listener that accepts TCP but
+  // never serves CDP. Clean it before trying to create a replacement tunnel.
+  cleanupCdpBridge(port);
+  if (canReachCdp(localPort)) return true;
 
   const now = Date.now();
   if (now - wslCdpTunnelLastAttempt < 5000) return false;
   wslCdpTunnelLastAttempt = now;
+
+  ensureWindowsToWslSshKey();
 
   try {
     spawn('powershell.exe', [
@@ -298,7 +382,7 @@ export function ensureCdpBridge(port) {
     return false;
   }
 
-  return waitForCdp(getLocalCdpPort(port));
+  return waitForCdp(localPort, 5000);
 }
 
 // --- Start Figma ---

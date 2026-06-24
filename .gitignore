@@ -1,7 +1,9 @@
 .DS_Store
+nul
 *.log
 DEV-NOTES.md
 node_modules/
+.tools/
 .figma-client-*.mjs
 screenshot.png
 docs/figma-api/

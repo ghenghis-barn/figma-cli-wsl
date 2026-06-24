@@ -33,6 +33,11 @@ figma-cli controls Figma Desktop directly. Open Figma Desktop, then run
   intentionally layered compositions. Do not use manual `x`/`y` placement for
   ordinary cards, lists, forms, nav, tables or page structure when Auto Layout
   can express the relationship.
+- For directional arrows and flow diagrams, use native Figma line/arrow
+  primitives (`figma.createLine()`, line caps or CLI line helpers), not text
+  glyph arrows or a line-plus-text-field workaround. Preserve existing
+  manually drawn native arrows unless the user asks to restyle them. In FigJam,
+  prefer native connectors when available.
 - When editing existing canvas content, preserve intentional absolute layouts
   for diagrammatic or illustrative regions, but convert routine UI stacks and
   repeated rows/cards to Auto Layout where it improves maintainability.
@@ -81,3 +86,26 @@ figma-cli node to-component "<id>"
 figma-cli verify "<id>" --measure
 figma-cli a11y audit
 ```
+
+## Cloud Comments / Webhooks
+
+- Comments and webhooks live in Figma's hosted collaboration layer, so use the
+  REST-backed `figma-cli comments` / `figma-cli webhooks` commands rather than
+  the local canvas/plugin path.
+- For live webhook delivery, prefer
+  `figma-cli webhooks watch --tunnel-provider ngrok --register ...`. ngrok is
+  more suitable than localtunnel for end-to-end tests because the CLI can read
+  the local ngrok Agent API, verify the public `/health` route, and then
+  register the exact endpoint with Figma.
+- localtunnel is still available through `--tunnel` or
+  `--tunnel-provider localtunnel`, but treat it as a fallback. If Figma shows
+  408/timeout delivery attempts, switch to ngrok before changing webhook code.
+- Store ngrok auth outside command arguments: use `ngrok config add-authtoken`,
+  `NGROK_AUTHTOKEN`, or `figma-cli config set ngrokAuthtoken <token>`; config
+  output redacts token-like values by default. If ngrok is installed outside
+  `PATH`, persist the binary path with `figma-cli config set ngrokBin <path>`.
+- When testing a webhook path, use `--events-file` for a durable JSONL log,
+  `--once --delete-on-stop` for temporary registered hooks, and
+  `figma-cli webhooks requests <id>` to distinguish Figma delivery failures
+  from local listener failures. A valid smoke test receives `PING`, then a
+  non-PING event such as `FILE_COMMENT`, then cleans up the registered webhook.

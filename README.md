@@ -161,6 +161,81 @@ On a fixed AI plan (e.g. Claude Pro), fewer tokens per task means you get more d
 
 **Bottom line:** local, no token, no rate limit, no cloud round-trip, and the lowest token cost — built for fast, reliable building and verifying from Claude Code or Cursor.
 
+### Cloud-backed comments and webhooks
+
+Comments and webhooks are different from canvas editing: they live in Figma's hosted collaboration layer, so the Figma Plugin API does not expose them directly. figma-cli treats them as first-class cloud-backed commands while keeping the normal canvas tools local.
+
+Read comments from an open desktop file, or from the official REST API when a token is configured:
+
+```bash
+figma-cli comments list --title "Vision Sprint"
+figma-cli comments list WDmSrrJg3NjC7RhTSetTFy --source rest --json
+```
+
+For official REST access, set `FIGMA_API_TOKEN`, `FIGMA_TOKEN`, `FIGMA_OAUTH_TOKEN`, or persist a token with:
+
+```bash
+figma-cli config set figmaApiToken <token>
+```
+
+Webhook support uses Figma Webhooks V2. Start a local receiver subprocess and expose it with a public tunnel. For end-to-end webhook testing, prefer ngrok because it gives the CLI a stable local Agent API for discovering the public HTTPS URL and inspecting live tunnel state. localtunnel remains available as a lightweight fallback, but it can intermittently accept an initial request and then fail later deliveries.
+
+```bash
+FIGMA_WEBHOOK_PASSCODE=<secret> figma-cli webhooks watch --port 8787
+```
+
+To have figma-cli open an ngrok tunnel and register the webhook in one step:
+
+```bash
+figma-cli webhooks watch \
+  --tunnel-provider ngrok \
+  --register \
+  --title "Vision Sprint" \
+  --event FILE_COMMENT \
+  --delete-on-stop
+```
+
+ngrok can use an existing `ngrok config add-authtoken` setup, `NGROK_AUTHTOKEN`, or a redacted figma-cli config value:
+
+```bash
+figma-cli config set ngrokAuthtoken <token>
+```
+
+Use `--ngrok-url https://<reserved>.ngrok.app` for a reserved/stable ngrok endpoint, `--ngrok-api-port <port>` if `127.0.0.1:4040` is occupied, or `--ngrok-bin <path>` if the executable is not on `PATH`. To make a non-PATH binary the default for future runs, persist it with:
+
+```bash
+figma-cli config set ngrokBin /path/to/ngrok
+```
+
+You can also register an existing public endpoint manually:
+
+```bash
+figma-cli webhooks create \
+  --title "Vision Sprint" \
+  --event FILE_COMMENT \
+  --endpoint https://<public-host>/figma-webhook \
+  --passcode <secret>
+```
+
+`webhooks watch` runs the HTTP receiver in a child process and streams validated events back to the parent CLI process. Use `--events-file events.jsonl` to keep a durable log, `--register --endpoint <public-url>` to create the webhook as the listener starts, and `webhooks requests <id>` to inspect recent delivery attempts. When a tunnel is opened by the watcher, the CLI verifies the public `/health` endpoint before registering with Figma; pass `--no-tunnel-healthcheck` only when debugging a non-standard tunnel.
+
+Known-good smoke test for a file comment webhook:
+
+```bash
+figma-cli webhooks watch \
+  --tunnel-provider ngrok \
+  --register \
+  --title "Vision Sprint" \
+  --event FILE_COMMENT \
+  --once \
+  --delete-on-stop \
+  --events-file /tmp/figma-webhooks.jsonl
+
+figma-cli comments create "webhook smoke test" --title "Vision Sprint" --x 1280 --y -720
+```
+
+The watcher should receive the initial `PING`, then a `FILE_COMMENT`, then delete the temporary webhook when `--once --delete-on-stop` exits. Delete the smoke-test comment afterwards if it was only used to trigger delivery.
+
 ---
 
 ## What you can ask for

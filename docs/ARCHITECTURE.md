@@ -23,6 +23,11 @@ WSL CLI → 127.0.0.1:39222 → Windows reverse SSH tunnel → Windows Figma 127
 
 3. **Figma Plugin API**: We execute JavaScript against the global `figma` object, which provides full access to the Figma Plugin API.
 
+4. **Figma REST API for hosted collaboration state**: Comments and webhooks are
+   not part of the local canvas/plugin runtime. They live in Figma's hosted
+   collaboration layer, so `src/figma-rest.js` uses the official REST API for
+   comment reads/writes and webhook management.
+
 ### Connection Flow
 
 1. User runs `figma-ds-cli connect`
@@ -57,12 +62,37 @@ figma-cli/
 
 ### No API Key Required
 
-Unlike the Figma REST API which requires authentication, we use the Plugin API directly through the desktop app. This means:
+For local canvas creation and inspection, unlike the Figma REST API which requires authentication, we use the Plugin API directly through the desktop app. This means:
 
 - Full read/write access to everything
 - No rate limits
 - Access to features not available in REST API (like variable modes)
 - Works with the user's existing Figma session
+
+Cloud-backed features are the exception. File comments and webhooks require a
+Figma REST token because the Figma Plugin API does not expose that hosted
+collaboration state.
+
+### Cloud Comments and Webhooks
+
+`src/commands/comments-webhooks.js` adds first-class commands for:
+
+- reading, creating and deleting file comments
+- creating, listing, deleting and inspecting Figma Webhooks V2 registrations
+- running a child-process HTTP listener that streams validated events back to
+  the parent CLI process
+
+For live delivery tests, the supported tunnel path is:
+
+```
+Figma Webhooks V2 → ngrok HTTPS endpoint → local /figma-webhook listener → parent CLI IPC
+```
+
+The watcher can start ngrok, discover the public URL from the local ngrok Agent
+API, verify public `/health`, register the exact endpoint with Figma, log
+events to JSONL, and delete temporary webhooks on stop. localtunnel remains
+available as a lightweight fallback, but ngrok is the default operational choice
+for reliable end-to-end webhook testing.
 
 ### Limitations
 

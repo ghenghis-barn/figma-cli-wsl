@@ -687,8 +687,8 @@ function figmaUse(args, options = {}) {
 
   if (args === 'status' || args.startsWith('status')) {
     try {
-      ensureCdpBridge();
-      const result = execSync(`curl -s ${getCdpUrl()}/json`, { encoding: 'utf8', stdio: 'pipe' });
+      if (!ensureCdpBridge()) return 'Not connected';
+      const result = execSync(`curl -fsS --connect-timeout 0.5 --max-time 3 ${getCdpUrl()}/json`, { encoding: 'utf8', stdio: 'pipe' });
       const pages = JSON.parse(result);
       const figmaPage = pages.find(p => p.url?.includes('figma.com/design') || p.url?.includes('figma.com/file'));
       if (figmaPage) {

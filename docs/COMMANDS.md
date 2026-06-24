@@ -74,6 +74,47 @@ figma-ds-cli
 figma-ds-cli connect
 ```
 
+## Cloud Comments & Webhooks
+
+Comments and webhooks use Figma's hosted collaboration layer, so they require a
+Figma REST token even though normal canvas editing does not.
+
+```bash
+# Persist cloud tokens; config get redacts token-like values by default
+figma-cli config set figmaApiToken <figma-token>
+figma-cli config set ngrokAuthtoken <ngrok-token>
+
+# Optional: persist a local ngrok binary when it is not on PATH
+figma-cli config set ngrokBin /path/to/ngrok
+
+# Read comments for an open file
+figma-cli comments list --title "Vision Sprint"
+figma-cli comments list WDmSrrJg3NjC7RhTSetTFy --source rest --json
+
+# Create/delete a comment via REST
+figma-cli comments create "webhook smoke test" --title "Vision Sprint" --x 1280 --y -720
+figma-cli comments delete <commentId> --title "Vision Sprint"
+
+# Start a live file-comment watcher with an ngrok tunnel.
+# The watcher receives Figma's PING, waits for one real event, then deletes the
+# temporary webhook when it exits.
+figma-cli webhooks watch \
+  --tunnel-provider ngrok \
+  --register \
+  --title "Vision Sprint" \
+  --event FILE_COMMENT \
+  --once \
+  --delete-on-stop \
+  --events-file /tmp/figma-webhooks.jsonl
+
+# Inspect Figma-side delivery attempts when debugging failures
+figma-cli webhooks requests <webhookId>
+```
+
+Use `--ngrok-url` for a reserved endpoint, `--ngrok-api-port` if the default
+ngrok Agent API port `4040` is occupied, or `--no-tunnel-healthcheck` only when
+debugging a non-standard tunnel.
+
 ## Design Tokens
 
 ```bash

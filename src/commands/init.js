@@ -62,6 +62,11 @@ needs \`flex="col"\` or \`flex="row"\`.
   intentionally layered compositions. Do not use manual \`x\`/\`y\` placement for
   ordinary cards, lists, forms, nav, tables or page structure when Auto Layout
   can express the relationship.
+- For directional arrows and flow diagrams, use native Figma line/arrow
+  primitives (\`figma.createLine()\`, line caps or CLI line helpers), not text
+  glyph arrows or a line-plus-text-field workaround. Preserve existing manually
+  drawn native arrows unless the user asks to restyle them. In FigJam, prefer
+  native connectors when available.
 - When editing existing canvas content, preserve intentional absolute layouts
   for diagrammatic or illustrative regions, but convert routine UI stacks and
   repeated rows/cards to Auto Layout where it improves maintainability.
@@ -94,6 +99,25 @@ figma-cli node to-component "<id>"     # promote to a component
 figma-cli verify "<id>" --measure      # screenshot + dimensions
 figma-cli a11y audit                   # contrast / touch / text checks
 \`\`\`
+
+## Cloud comments / webhooks
+- Comments and webhooks live in Figma's hosted collaboration layer, so use the
+  REST-backed \`figma-cli comments\` / \`figma-cli webhooks\` commands rather
+  than the local canvas/plugin path.
+- Configure a Figma REST token before using cloud-backed features:
+  \`figma-cli config set figmaApiToken <token>\`.
+- For live webhook delivery, prefer
+  \`figma-cli webhooks watch --tunnel-provider ngrok --register ...\`. ngrok is
+  more reliable than localtunnel for end-to-end tests because the CLI can read
+  the local ngrok Agent API, verify the public \`/health\` route, and register
+  the exact endpoint with Figma.
+- Configure ngrok auth outside command arguments: use
+  \`ngrok config add-authtoken\`, \`NGROK_AUTHTOKEN\`, or
+  \`figma-cli config set ngrokAuthtoken <token>\`. If ngrok is not on PATH,
+  persist its location with \`figma-cli config set ngrokBin <path>\`.
+- Use \`--events-file\` for a durable JSONL log, \`--once --delete-on-stop\` for
+  smoke tests, and \`figma-cli webhooks requests <id>\` to distinguish Figma
+  delivery failures from local listener failures.
 `;
 
 function writeFile(path, content, force) {
