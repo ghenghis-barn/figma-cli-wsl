@@ -10,6 +10,7 @@ import { join } from 'path';
 const PLATFORM = process.platform;
 const WSL_DEFAULT_LOCAL_CDP_PORT = 39222;
 let wslCdpTunnelLastAttempt = 0;
+let wslCdpLocalPortOverride = null;
 
 // --- Null device ---
 export const nullDevice = PLATFORM === 'win32' ? 'NUL' : '/dev/null';
@@ -101,6 +102,33 @@ function wslPathToWindowsPath(path) {
   return `${match[1].toUpperCase()}:\\${match[2].replace(/\//g, '\\')}`;
 }
 
+function parseFigmaAppVersion(folder) {
+  return String(folder)
+    .replace(/^app-/, '')
+    .split(/[^0-9]+/)
+    .filter(Boolean)
+    .map(part => Number.parseInt(part, 10));
+}
+
+function compareFigmaAppFolders(a, b) {
+  const av = parseFigmaAppVersion(a);
+  const bv = parseFigmaAppVersion(b);
+  const length = Math.max(av.length, bv.length);
+
+  for (let i = 0; i < length; i++) {
+    const diff = (bv[i] || 0) - (av[i] || 0);
+    if (diff !== 0) return diff;
+  }
+
+  return b.localeCompare(a);
+}
+
+function getFigmaAppFolders(figmaBase) {
+  return readdirSync(figmaBase)
+    .filter(e => e.startsWith('app-'))
+    .sort(compareFigmaAppFolders);
+}
+
 function getWindowsLocalAppDataFromWsl() {
   try {
     return runPowerShell('$env:LOCALAPPDATA');
@@ -129,10 +157,7 @@ function findWindowsFigmaAsarWsl() {
   if (!figmaBase) return null;
 
   try {
-    const appFolders = readdirSync(figmaBase)
-      .filter(e => e.startsWith('app-'))
-      .sort()
-      .reverse();
+    const appFolders = getFigmaAppFolders(figmaBase);
 
     for (const folder of appFolders) {
       const asarPath = join(figmaBase, folder, 'resources', 'app.asar');
@@ -154,10 +179,7 @@ function findWindowsFigmaExeWsl() {
   if (existsSync(mainExe)) return mainExe;
 
   try {
-    const appFolders = readdirSync(figmaBase)
-      .filter(e => e.startsWith('app-'))
-      .sort()
-      .reverse();
+    const appFolders = getFigmaAppFolders(figmaBase);
 
     for (const folder of appFolders) {
       const exePath = join(figmaBase, folder, 'Figma.exe');
@@ -322,9 +344,14 @@ function getLocalCdpPort(port) {
   // WSL's localhost relay binds Windows 9222 before Figma does, so CDP returns
   // empty replies. Keep Windows Figma on 9222 but expose it inside WSL on a
   // separate bridge port by default.
-  if (isWsl()) return WSL_DEFAULT_LOCAL_CDP_PORT;
+  if (isWsl()) return wslCdpLocalPortOverride || WSL_DEFAULT_LOCAL_CDP_PORT;
 
   return parseInt(String(port), 10);
+}
+
+function getWslLocalCdpPortCandidates() {
+  if (process.env.FIGMA_CDP_PORT) return [parseInt(process.env.FIGMA_CDP_PORT, 10)];
+  return Array.from({ length: 8 }, (_, i) => WSL_DEFAULT_LOCAL_CDP_PORT + i);
 }
 
 export function getCdpHost() {
@@ -357,13 +384,12 @@ export function getCdpBridgeCommand(port) {
 export function ensureCdpBridge(port) {
   if (!isWsl()) return true;
   if (process.env.FIGMA_WSL_CDP_TUNNEL === '0') return false;
-  const localPort = getLocalCdpPort(port);
-  if (canReachCdp(localPort)) return true;
+  if (canReachCdp(getLocalCdpPort(port))) return true;
 
   // A dead reverse SSH session can leave a local listener that accepts TCP but
   // never serves CDP. Clean it before trying to create a replacement tunnel.
   cleanupCdpBridge(port);
-  if (canReachCdp(localPort)) return true;
+  if (canReachCdp(getLocalCdpPort(port))) return true;
 
   const now = Date.now();
   if (now - wslCdpTunnelLastAttempt < 5000) return false;
@@ -371,18 +397,26 @@ export function ensureCdpBridge(port) {
 
   ensureWindowsToWslSshKey();
 
-  try {
-    spawn('powershell.exe', [
-      '-NoProfile',
-      '-WindowStyle', 'Hidden',
-      '-Command',
-      buildWindowsSshReverseTunnelCommand(port)
-    ], { detached: true, stdio: 'ignore' }).unref();
-  } catch {
-    return false;
+  for (const localPort of getWslLocalCdpPortCandidates()) {
+    wslCdpLocalPortOverride = localPort;
+    cleanupCdpBridge(port);
+
+    try {
+      spawn('powershell.exe', [
+        '-NoProfile',
+        '-WindowStyle', 'Hidden',
+        '-Command',
+        buildWindowsSshReverseTunnelCommand(port)
+      ], { detached: true, stdio: 'ignore' }).unref();
+    } catch {
+      continue;
+    }
+
+    if (waitForCdp(localPort, 5000)) return true;
   }
 
-  return waitForCdp(localPort, 5000);
+  if (!process.env.FIGMA_CDP_PORT) wslCdpLocalPortOverride = null;
+  return false;
 }
 
 // --- Start Figma ---
@@ -428,11 +462,7 @@ if (PLATFORM === 'win32') {
     if (!existsSync(figmaBase)) return null;
 
     try {
-      const entries = readdirSync(figmaBase);
-      const appFolders = entries
-        .filter(e => e.startsWith('app-'))
-        .sort()
-        .reverse();
+      const appFolders = getFigmaAppFolders(figmaBase);
 
       for (const folder of appFolders) {
         const asarPath = join(figmaBase, folder, 'resources', 'app.asar');
@@ -455,11 +485,7 @@ if (PLATFORM === 'win32') {
     if (existsSync(mainExe)) return mainExe;
 
     try {
-      const entries = readdirSync(figmaBase);
-      const appFolders = entries
-        .filter(e => e.startsWith('app-'))
-        .sort()
-        .reverse();
+      const appFolders = getFigmaAppFolders(figmaBase);
 
       for (const folder of appFolders) {
         const exePath = join(figmaBase, folder, 'Figma.exe');
