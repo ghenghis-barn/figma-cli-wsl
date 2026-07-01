@@ -1,0 +1,1235 @@
+{
+  "evidence": {
+    "fileName": "UX Strategy",
+    "page": {
+      "id": "786:207",
+      "name": "WSL/Windows"
+    },
+    "selectedFrameCount": 2,
+    "filters": [],
+    "nodeIds": [
+      "916:1008",
+      "919:1065"
+    ],
+    "slides": [
+      {
+        "id": "916:1008",
+        "name": "CTO Review - Mac Hardware Request",
+        "type": "FRAME",
+        "x": 11,
+        "y": 11100,
+        "width": 1920,
+        "height": 1080,
+        "childCount": 3,
+        "text": [
+          {
+            "name": "CTO REVIEW / AURORA ENERGY RESEARCH",
+            "text": "CTO REVIEW / AURORA ENERGY RESEARCH",
+            "x": 131,
+            "y": 11157,
+            "w": 1398,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "Reopen as capability risk, not as a Mac standard",
+            "text": "Reopen as capability risk, not as a Mac standard",
+            "x": 131,
+            "y": 11183,
+            "w": 1398,
+            "h": 52,
+            "size": 44
+          },
+          {
+            "name": "CURRENT DECISION",
+            "text": "CURRENT DECISION",
+            "x": 1575,
+            "y": 11199,
+            "w": 258,
+            "h": 16,
+            "size": 13
+          },
+          {
+            "name": "Pilot only, no rollout",
+            "text": "Pilot only, no rollout",
+            "x": 1575,
+            "y": 11220,
+            "w": 258,
+            "h": 27,
+            "size": 22
+          },
+          {
+            "name": "Default remains Lenovo Windows plus WSL2. The visual evidence does justify a bounded investigation because the workflow risk now touches Aurora AI-native product development.",
+            "text": "Default remains Lenovo Windows plus WSL2. The visual evidence does justify a bounded investigation because the workflow risk now touches Aurora AI-native product development.",
+            "x": 131,
+            "y": 11243,
+            "w": 1398,
+            "h": 50,
+            "size": 18
+          },
+          {
+            "name": "WHAT THE VISUALS PROVE",
+            "text": "WHAT THE VISUALS PROVE",
+            "x": 87,
+            "y": 11342,
+            "w": 543,
+            "h": 17,
+            "size": 13
+          },
+          {
+            "name": "WHERE I PUSH BACK",
+            "text": "WHERE I PUSH BACK",
+            "x": 700,
+            "y": 11342,
+            "w": 543,
+            "h": 17,
+            "size": 13
+          },
+          {
+            "name": "HOW I WOULD DECIDE",
+            "text": "HOW I WOULD DECIDE",
+            "x": 1312,
+            "y": 11342,
+            "w": 543,
+            "h": 17,
+            "size": 13
+          },
+          {
+            "name": "There is real workflow friction",
+            "text": "There is real workflow friction",
+            "x": 87,
+            "y": 11372,
+            "w": 543,
+            "h": 32,
+            "size": 27
+          },
+          {
+            "name": "The endpoint answer is still unproven",
+            "text": "The endpoint answer is still unproven",
+            "x": 700,
+            "y": 11372,
+            "w": 543,
+            "h": 32,
+            "size": 27
+          },
+          {
+            "name": "Run a bounded capability test",
+            "text": "Run a bounded capability test",
+            "x": 1312,
+            "y": 11372,
+            "w": 543,
+            "h": 32,
+            "size": 27
+          },
+          {
+            "name": "- The boundary diagram shows the loop now crossing Windows GUI and WSL continuously, not occasionally.",
+            "text": "- The boundary diagram shows the loop now crossing Windows GUI and WSL continuously, not occasionally.",
+            "x": 87,
+            "y": 11417,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "- The visuals prove friction, but not that macOS is the only acceptable control plane.",
+            "text": "- The visuals prove friction, but not that macOS is the only acceptable control plane.",
+            "x": 700,
+            "y": 11417,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "Define critical loops: canvas read/write, prototype critique, repo-agent work, research synthesis, markdown context and verification.",
+            "text": "Define critical loops: canvas read/write, prototype critique, repo-agent work, research synthesis, markdown context and verification.",
+            "x": 1354,
+            "y": 11417,
+            "w": 501,
+            "h": 42,
+            "size": 15
+          },
+          {
+            "name": "1",
+            "text": "1",
+            "x": 1318,
+            "y": 11424,
+            "w": 18,
+            "h": 17,
+            "size": 14
+          },
+          {
+            "name": "Time-box IT and InfoSec discovery to 30 to 45 days, with explicit controls and support model.",
+            "text": "Time-box IT and InfoSec discovery to 30 to 45 days, with explicit controls and support model.",
+            "x": 1354,
+            "y": 11472,
+            "w": 501,
+            "h": 42,
+            "size": 15
+          },
+          {
+            "name": "- The Figma case maps live canvas use cases to multiple failed or fragile implementation paths.",
+            "text": "- The Figma case maps live canvas use cases to multiple failed or fragile implementation paths.",
+            "x": 87,
+            "y": 11474,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "- The deck needs measured drag: hours lost, failed loops, support incidents, delayed decisions and onboarding cost.",
+            "text": "- The deck needs measured drag: hours lost, failed loops, support incidents, delayed decisions and onboarding cost.",
+            "x": 700,
+            "y": 11474,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "2",
+            "text": "2",
+            "x": 1318,
+            "y": 11479,
+            "w": 18,
+            "h": 17,
+            "size": 14
+          },
+          {
+            "name": "Run one-seat pilot with baseline metrics: setup time, failed loop rate, manual bridge fixes, cycle time and support hours.",
+            "text": "Run one-seat pilot with baseline metrics: setup time, failed loop rate, manual bridge fixes, cycle time and support hours.",
+            "x": 1354,
+            "y": 11527,
+            "w": 501,
+            "h": 42,
+            "size": 15
+          },
+          {
+            "name": "- The WSLg architecture slide removes the simple Linux GUI fallback I would otherwise test first.",
+            "text": "- The WSLg architecture slide removes the simple Linux GUI fallback I would otherwise test first.",
+            "x": 87,
+            "y": 11531,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "- InfoSec work for Macs is real platform work: identity, device management, patching, backup, recovery and compliance.",
+            "text": "- InfoSec work for Macs is real platform work: identity, device management, patching, backup, recovery and compliance.",
+            "x": 700,
+            "y": 11531,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "3",
+            "text": "3",
+            "x": 1318,
+            "y": 11534,
+            "w": 18,
+            "h": 17,
+            "size": 14
+          },
+          {
+            "name": "Decide at architecture review: UX-specific macOS endpoint, productised Windows/WSL bridge, or hosted/browser-first agent path.",
+            "text": "Decide at architecture review: UX-specific macOS endpoint, productised Windows/WSL bridge, or hosted/browser-first agent path.",
+            "x": 1354,
+            "y": 11582,
+            "w": 501,
+            "h": 42,
+            "size": 15
+          },
+          {
+            "name": "- The scaling topology shows the issue being inherited by UXE, UX and UR hires, not contained to one expert.",
+            "text": "- The scaling topology shows the issue being inherited by UXE, UX and UR hires, not contained to one expert.",
+            "x": 87,
+            "y": 11588,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "- A 4-person UX exception can quietly become an unmanaged second endpoint standard without governance.",
+            "text": "- A 4-person UX exception can quietly become an unmanaged second endpoint standard without governance.",
+            "x": 700,
+            "y": 11588,
+            "w": 543,
+            "h": 44,
+            "size": 16
+          },
+          {
+            "name": "4",
+            "text": "4",
+            "x": 1318,
+            "y": 11589,
+            "w": 18,
+            "h": 17,
+            "size": 14
+          },
+          {
+            "name": "Guardrail: do not let device preference bypass architecture. Decide the operating model first, then the hardware.",
+            "text": "Guardrail: do not let device preference bypass architecture. Decide the operating model first, then the hardware.",
+            "x": 1326,
+            "y": 11651,
+            "w": 515,
+            "h": 40,
+            "size": 14
+          },
+          {
+            "name": "Implication",
+            "text": "Implication",
+            "x": 103,
+            "y": 11661,
+            "w": 511,
+            "h": 19,
+            "size": 15
+          },
+          {
+            "name": "Decision gap",
+            "text": "Decision gap",
+            "x": 716,
+            "y": 11661,
+            "w": 511,
+            "h": 19,
+            "size": 15
+          },
+          {
+            "name": "This is enough to reopen the decision. It is no longer credible to treat the request only as personal hardware preference.",
+            "text": "This is enough to reopen the decision. It is no longer credible to treat the request only as personal hardware preference.",
+            "x": 103,
+            "y": 11685,
+            "w": 511,
+            "h": 40,
+            "size": 15
+          },
+          {
+            "name": "I need Mac versus Windows/WSL versus hosted agent workspace compared on total friction, total cost and residual security risk.",
+            "text": "I need Mac versus Windows/WSL versus hosted agent workspace compared on total friction, total cost and residual security risk.",
+            "x": 716,
+            "y": 11685,
+            "w": 511,
+            "h": 40,
+            "size": 15
+          },
+          {
+            "name": "ULTIMATE CONCLUSION",
+            "text": "ULTIMATE CONCLUSION",
+            "x": 89,
+            "y": 11934,
+            "w": 330,
+            "h": 18,
+            "size": 13
+          },
+          {
+            "name": "I would not approve a Mac rollout for the expanding UX team on this deck alone. I would reopen the request because the visual workflow evidence links endpoint choice to Aurora AI-native product objectives. Authorize bounded IT and InfoSec discovery plus one pilot. If macOS proves materially lower-risk and higher-throughput under enterprise controls, create a UX-specific standard; otherwise invest in a supported Windows/WSL or hosted agent path.",
+            "text": "I would not approve a Mac rollout for the expanding UX team on this deck alone. I would reopen the request because the visual workflow evidence links endpoint choice to Aurora AI-native product objectives. Authorize bounded IT and InfoSec discovery plus one pilot. If macOS proves materially lower-risk and higher-throughput under enterprise controls, create a UX-specific standard; otherwise invest in a supported Windows/WSL or hosted agent path.",
+            "x": 449,
+            "y": 11958,
+            "w": 1404,
+            "h": 120,
+            "size": 20
+          },
+          {
+            "name": "Case reopened. Approval conditional.",
+            "text": "Case reopened. Approval conditional.",
+            "x": 89,
+            "y": 11960,
+            "w": 330,
+            "h": 70,
+            "size": 29
+          }
+        ],
+        "children": [
+          {
+            "id": "916:1009",
+            "name": "Header",
+            "type": "FRAME",
+            "x": 52,
+            "y": 52,
+            "w": 1816,
+            "h": 146
+          },
+          {
+            "id": "916:1018",
+            "name": "Analysis columns",
+            "type": "FRAME",
+            "x": 52,
+            "y": 218,
+            "w": 1816,
+            "h": 570
+          },
+          {
+            "id": "916:1060",
+            "name": "Conclusion band",
+            "type": "FRAME",
+            "x": 52,
+            "y": 808,
+            "w": 1816,
+            "h": 220
+          }
+        ],
+        "screenshot": null,
+        "screenshotBase64": null
+      },
+      {
+        "id": "919:1065",
+        "name": "CTO Review - Supporting Challenges",
+        "type": "FRAME",
+        "x": 2011,
+        "y": 11100,
+        "width": 1920,
+        "height": 1080,
+        "childCount": 3,
+        "text": [
+          {
+            "name": "SUPPORTING CHALLENGE LOG / CTO REVIEW",
+            "text": "SUPPORTING CHALLENGE LOG / CTO REVIEW",
+            "x": 2115,
+            "y": 11154,
+            "w": 1420,
+            "h": 17,
+            "size": 13
+          },
+          {
+            "name": "Specific challenges to the Mac approval case",
+            "text": "Specific challenges to the Mac approval case",
+            "x": 2115,
+            "y": 11178,
+            "w": 1420,
+            "h": 48,
+            "size": 42
+          },
+          {
+            "name": "REVIEW STANCE",
+            "text": "REVIEW STANCE",
+            "x": 3579,
+            "y": 11180,
+            "w": 268,
+            "h": 15,
+            "size": 12
+          },
+          {
+            "name": "Friction proven, remedy unproven",
+            "text": "Friction proven, remedy unproven",
+            "x": 3579,
+            "y": 11200,
+            "w": 268,
+            "h": 50,
+            "size": 20
+          },
+          {
+            "name": "The deck makes a credible case for workflow friction. These are the questions I would force before turning that into a supported macOS endpoint standard.",
+            "text": "The deck makes a credible case for workflow friction. These are the questions I would force before turning that into a supported macOS endpoint standard.",
+            "x": 2115,
+            "y": 11233,
+            "w": 1420,
+            "h": 24,
+            "size": 17
+          },
+          {
+            "name": "Macs do not create a control plane",
+            "text": "Macs do not create a control plane",
+            "x": 2115,
+            "y": 11321,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "Figma pain may be overgeneralized",
+            "text": "Figma pain may be overgeneralized",
+            "x": 3042,
+            "y": 11321,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "1",
+            "text": "1",
+            "x": 2074,
+            "y": 11342,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "2",
+            "text": "2",
+            "x": 3001,
+            "y": 11342,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "macOS may remove the WSL boundary, but live canvas automation still depends on app APIs, MCP compatibility, agent permissions, local sockets and tool-specific bridge work.",
+            "text": "macOS may remove the WSL boundary, but live canvas automation still depends on app APIs, MCP compatibility, agent permissions, local sockets and tool-specific bridge work.",
+            "x": 2115,
+            "y": 11347,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "The bridge evidence is strong, but it could be a Figma integration problem, a local-agent architecture problem, or an endpoint policy problem. The deck collapses those too quickly.",
+            "text": "The bridge evidence is strong, but it could be a Figma integration problem, a local-agent architecture problem, or an endpoint policy problem. The deck collapses those too quickly.",
+            "x": 3042,
+            "y": 11347,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "No quantified business loss yet",
+            "text": "No quantified business loss yet",
+            "x": 2115,
+            "y": 11464,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "Security cost is underplayed",
+            "text": "Security cost is underplayed",
+            "x": 3042,
+            "y": 11464,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "3",
+            "text": "3",
+            "x": 2074,
+            "y": 11485,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "4",
+            "text": "4",
+            "x": 3001,
+            "y": 11485,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "I would ask for weekly hours lost, failed loop count, support incidents, manual workaround time, delayed decisions, onboarding drag and any delivery impact.",
+            "text": "I would ask for weekly hours lost, failed loop count, support incidents, manual workaround time, delayed decisions, onboarding drag and any delivery impact.",
+            "x": 2115,
+            "y": 11490,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "Mac support means MDM, EDR, DLP, identity, certificates, patching, backup, recovery, procurement, app governance, audit evidence and support readiness.",
+            "text": "Mac support means MDM, EDR, DLP, identity, certificates, patching, backup, recovery, procurement, app governance, audit evidence and support readiness.",
+            "x": 3042,
+            "y": 11490,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "Local endpoint integration is assumed",
+            "text": "Local endpoint integration is assumed",
+            "x": 2115,
+            "y": 11606,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "Scaling cuts both ways",
+            "text": "Scaling cuts both ways",
+            "x": 3042,
+            "y": 11606,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "5",
+            "text": "5",
+            "x": 2074,
+            "y": 11627,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "6",
+            "text": "6",
+            "x": 3001,
+            "y": 11627,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "The deck assumes the future is local app plus local agent. I would compare hosted agent workspaces, cloud dev environments and internal gateway services.",
+            "text": "The deck assumes the future is local app plus local agent. I would compare hosted agent workspaces, cloud dev environments and internal gateway services.",
+            "x": 2115,
+            "y": 11632,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "A 4-person UX team makes the workflow issue more material, but also creates a second platform surface unless procurement, security and support are explicit.",
+            "text": "A 4-person UX team makes the workflow issue more material, but also creates a second platform surface unless procurement, security and support are explicit.",
+            "x": 3042,
+            "y": 11632,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "Hero-workflow bias",
+            "text": "Hero-workflow bias",
+            "x": 2115,
+            "y": 11748,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "Windows remediation is not exhausted",
+            "text": "Windows remediation is not exhausted",
+            "x": 3042,
+            "y": 11748,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "7",
+            "text": "7",
+            "x": 2074,
+            "y": 11769,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "8",
+            "text": "8",
+            "x": 3001,
+            "y": 11769,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "The current UX lead is unusually technical. The decision should test whether ordinary UX and UR hires can use the model without debugging bridges.",
+            "text": "The current UX lead is unusually technical. The decision should test whether ordinary UX and UR hires can use the model without debugging bridges.",
+            "x": 2115,
+            "y": 11774,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "Before approving Macs, compare a productised Windows-native agent service, approved localhost policy, managed tunnel, Figma plugin path or MCP gateway.",
+            "text": "Before approving Macs, compare a productised Windows-native agent service, approved localhost policy, managed tunnel, Figma plugin path or MCP gateway.",
+            "x": 3042,
+            "y": 11774,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "AI-native is too broad as a policy test",
+            "text": "AI-native is too broad as a policy test",
+            "x": 2115,
+            "y": 11891,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "Precedent risk is real",
+            "text": "Precedent risk is real",
+            "x": 3042,
+            "y": 11891,
+            "w": 833,
+            "h": 21,
+            "size": 17
+          },
+          {
+            "name": "9",
+            "text": "9",
+            "x": 2074,
+            "y": 11912,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "10",
+            "text": "10",
+            "x": 3001,
+            "y": 11912,
+            "w": 20,
+            "h": 18,
+            "size": 14
+          },
+          {
+            "name": "Almost any advanced tooling request can use that frame. Approval criteria need to define when endpoint exceptions are justified and when platform investment is better.",
+            "text": "Almost any advanced tooling request can use that frame. Approval criteria need to define when endpoint exceptions are justified and when platform investment is better.",
+            "x": 2115,
+            "y": 11917,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "If UX gets Macs for AI workflow reasons, engineering, data science, research and power users may make adjacent claims. The boundary must be explicit.",
+            "text": "If UX gets Macs for AI workflow reasons, engineering, data science, research and power users may make adjacent claims. The boundary must be explicit.",
+            "x": 3042,
+            "y": 11917,
+            "w": 833,
+            "h": 34,
+            "size": 13
+          },
+          {
+            "name": "The deck proves the current setup creates meaningful friction and should be reopened. It does not yet prove that macOS is the lowest-risk, highest-leverage remedy. The next decision should compare macOS, productised Windows/WSL support and hosted agent infrastructure against measured workflow outcomes and enterprise control cost.",
+            "text": "The deck proves the current setup creates meaningful friction and should be reopened. It does not yet prove that macOS is the lowest-risk, highest-leverage remedy. The next decision should compare macOS, productised Windows/WSL support and hosted agent infrastructure against measured workflow outcomes and enterprise control cost.",
+            "x": 2373,
+            "y": 12021,
+            "w": 1494,
+            "h": 84,
+            "size": 19
+          },
+          {
+            "name": "SHARPEST CHALLENGE",
+            "text": "SHARPEST CHALLENGE",
+            "x": 2075,
+            "y": 12026,
+            "w": 270,
+            "h": 16,
+            "size": 12
+          },
+          {
+            "name": "Friction proven. Remedy not yet proven.",
+            "text": "Friction proven. Remedy not yet proven.",
+            "x": 2075,
+            "y": 12048,
+            "w": 270,
+            "h": 93,
+            "size": 26
+          }
+        ],
+        "children": [
+          {
+            "id": "919:1066",
+            "name": "Header",
+            "type": "FRAME",
+            "x": 40,
+            "y": 40,
+            "w": 1840,
+            "h": 130
+          },
+          {
+            "id": "919:1075",
+            "name": "Challenge rows",
+            "type": "FRAME",
+            "x": 40,
+            "y": 186,
+            "w": 1840,
+            "h": 700
+          },
+          {
+            "id": "919:1141",
+            "name": "Bottom conclusion",
+            "type": "FRAME",
+            "x": 40,
+            "y": 902,
+            "w": 1840,
+            "h": 122
+          }
+        ],
+        "screenshot": null,
+        "screenshotBase64": null
+      }
+    ]
+  },
+  "review": {
+    "protocol": "SAMRE",
+    "case": {
+      "question": "How should Aurora decide whether to support macOS hardware for the expanding UX team?",
+      "answer1": {
+        "id": "requester",
+        "label": "Requester",
+        "position": "Reopen and approve or pilot a macOS endpoint path because the UX operating environment is now strategic for AI-native workflows."
+      },
+      "answer2": {
+        "id": "cto",
+        "label": "CTO",
+        "position": "Keep Lenovo Windows as the company standard unless the request proves a material workflow gain that outweighs security, platform and precedent costs."
+      },
+      "criteria": [
+        "Strategic relevance",
+        "Evidence quality",
+        "Security and platform realism",
+        "AI-native workflow credibility",
+        "Scalability beyond one expert",
+        "Decision and action clarity"
+      ],
+      "evidence": {
+        "summary": "Figma file: UX Strategy\nPage: WSL/Windows\nSlides reviewed: 2\nEvidence includes extracted text, frame metadata and screenshot paths where exported.",
+        "slides": [
+          {
+            "id": "916:1008",
+            "name": "CTO Review - Mac Hardware Request",
+            "x": 11,
+            "y": 11100,
+            "width": 1920,
+            "height": 1080,
+            "text": [
+              "CTO REVIEW / AURORA ENERGY RESEARCH",
+              "Reopen as capability risk, not as a Mac standard",
+              "CURRENT DECISION",
+              "Pilot only, no rollout",
+              "Default remains Lenovo Windows plus WSL2. The visual evidence does justify a bounded investigation because the workflow risk now touches Aurora AI-native product development.",
+              "WHAT THE VISUALS PROVE",
+              "WHERE I PUSH BACK",
+              "HOW I WOULD DECIDE",
+              "There is real workflow friction",
+              "The endpoint answer is still unproven",
+              "Run a bounded capability test",
+              "- The boundary diagram shows the loop now crossing Windows GUI and WSL continuously, not occasionally.",
+              "- The visuals prove friction, but not that macOS is the only acceptable control plane.",
+              "Define critical loops: canvas read/write, prototype critique, repo-agent work, research synthesis, markdown context and verification.",
+              "1",
+              "Time-box IT and InfoSec discovery to 30 to 45 days, with explicit controls and support model.",
+              "- The Figma case maps live canvas use cases to multiple failed or fragile implementation paths.",
+              "- The deck needs measured drag: hours lost, failed loops, support incidents, delayed decisions and onboarding cost.",
+              "2",
+              "Run one-seat pilot with baseline metrics: setup time, failed loop rate, manual bridge fixes, cycle time and support hours.",
+              "- The WSLg architecture slide removes the simple Linux GUI fallback I would otherwise test first.",
+              "- InfoSec work for Macs is real platform work: identity, device management, patching, backup, recovery and compliance.",
+              "3",
+              "Decide at architecture review: UX-specific macOS endpoint, productised Windows/WSL bridge, or hosted/browser-first agent path.",
+              "- The scaling topology shows the issue being inherited by UXE, UX and UR hires, not contained to one expert.",
+              "- A 4-person UX exception can quietly become an unmanaged second endpoint standard without governance.",
+              "4",
+              "Guardrail: do not let device preference bypass architecture. Decide the operating model first, then the hardware.",
+              "Implication",
+              "Decision gap",
+              "This is enough to reopen the decision. It is no longer credible to treat the request only as personal hardware preference.",
+              "I need Mac versus Windows/WSL versus hosted agent workspace compared on total friction, total cost and residual security risk.",
+              "ULTIMATE CONCLUSION",
+              "I would not approve a Mac rollout for the expanding UX team on this deck alone. I would reopen the request because the visual workflow evidence links endpoint choice to Aurora AI-native product objectives. Authorize bounded IT and InfoSec discovery plus one pilot. If macOS proves materially lower-risk and higher-throughput under enterprise controls, create a UX-specific standard; otherwise invest in a supported Windows/WSL or hosted agent path.",
+              "Case reopened. Approval conditional."
+            ],
+            "childCount": 3
+          },
+          {
+            "id": "919:1065",
+            "name": "CTO Review - Supporting Challenges",
+            "x": 2011,
+            "y": 11100,
+            "width": 1920,
+            "height": 1080,
+            "text": [
+              "SUPPORTING CHALLENGE LOG / CTO REVIEW",
+              "Specific challenges to the Mac approval case",
+              "REVIEW STANCE",
+              "Friction proven, remedy unproven",
+              "The deck makes a credible case for workflow friction. These are the questions I would force before turning that into a supported macOS endpoint standard.",
+              "Macs do not create a control plane",
+              "Figma pain may be overgeneralized",
+              "1",
+              "2",
+              "macOS may remove the WSL boundary, but live canvas automation still depends on app APIs, MCP compatibility, agent permissions, local sockets and tool-specific bridge work.",
+              "The bridge evidence is strong, but it could be a Figma integration problem, a local-agent architecture problem, or an endpoint policy problem. The deck collapses those too quickly.",
+              "No quantified business loss yet",
+              "Security cost is underplayed",
+              "3",
+              "4",
+              "I would ask for weekly hours lost, failed loop count, support incidents, manual workaround time, delayed decisions, onboarding drag and any delivery impact.",
+              "Mac support means MDM, EDR, DLP, identity, certificates, patching, backup, recovery, procurement, app governance, audit evidence and support readiness.",
+              "Local endpoint integration is assumed",
+              "Scaling cuts both ways",
+              "5",
+              "6",
+              "The deck assumes the future is local app plus local agent. I would compare hosted agent workspaces, cloud dev environments and internal gateway services.",
+              "A 4-person UX team makes the workflow issue more material, but also creates a second platform surface unless procurement, security and support are explicit.",
+              "Hero-workflow bias",
+              "Windows remediation is not exhausted",
+              "7",
+              "8",
+              "The current UX lead is unusually technical. The decision should test whether ordinary UX and UR hires can use the model without debugging bridges.",
+              "Before approving Macs, compare a productised Windows-native agent service, approved localhost policy, managed tunnel, Figma plugin path or MCP gateway.",
+              "AI-native is too broad as a policy test",
+              "Precedent risk is real",
+              "9",
+              "10",
+              "Almost any advanced tooling request can use that frame. Approval criteria need to define when endpoint exceptions are justified and when platform investment is better.",
+              "If UX gets Macs for AI workflow reasons, engineering, data science, research and power users may make adjacent claims. The boundary must be explicit.",
+              "The deck proves the current setup creates meaningful friction and should be reopened. It does not yet prove that macOS is the lowest-risk, highest-leverage remedy. The next decision should compare macOS, productised Windows/WSL support and hosted agent infrastructure against measured workflow outcomes and enterprise control cost.",
+              "SHARPEST CHALLENGE",
+              "Friction proven. Remedy not yet proven."
+            ],
+            "childCount": 3
+          }
+        ],
+        "visualNotes": []
+      },
+      "metadata": {
+        "source": "figma-cli adversarial review",
+        "fileName": "UX Strategy",
+        "page": {
+          "id": "786:207",
+          "name": "WSL/Windows"
+        },
+        "generatedAt": "2026-07-01T17:22:12.716Z"
+      }
+    },
+    "stopReason": "stable-gap",
+    "rounds": [
+      {
+        "round": 1,
+        "requester": {
+          "argument": "Round 1: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing between canvas, repo, markdown, comments and agents. The next slide pass should quantify lost loop time and show why ordinary UX/UR hires cannot maintain bespoke bridges.",
+          "claims": [
+            "The request concerns AI-native UX throughput.",
+            "Current bridge complexity is a scaling risk.",
+            "The slide visuals show a real cross-surface loop."
+          ],
+          "evidence_gaps": [
+            "quantified time loss",
+            "pilot success metrics",
+            "security control inventory"
+          ]
+        },
+        "cto": {
+          "argument": "Round 1: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or moving the workflow into hosted agent infrastructure. The strongest counter is that endpoint exceptions create support, security and precedent costs that scale beyond the first UX hire.",
+          "claims": [
+            "Friction is proven, but remedy is not yet proven.",
+            "Mac support is enterprise platform work.",
+            "Architecture alternatives must be compared."
+          ],
+          "evidence_gaps": [
+            "costed InfoSec plan",
+            "Windows remediation estimate",
+            "hosted-agent comparison"
+          ]
+        },
+        "judge": {
+          "scores": {
+            "requester": 78,
+            "cto": 82
+          },
+          "feedback": {
+            "requester": "Strengthen the causal chain from visual workflow friction to measurable business loss and explain why macOS beats alternatives.",
+            "cto": "Acknowledge the visual evidence more directly, then specify the evidence threshold and platform controls required for a pilot."
+          },
+          "rationale": "Both sides improve when they separate the proven workflow problem from the still-open endpoint remedy."
+        },
+        "score": {
+          "requester": 78,
+          "cto": 82
+        }
+      },
+      {
+        "round": 2,
+        "requester": {
+          "argument": "Round 2: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing between canvas, repo, markdown, comments and agents. The next slide pass should quantify lost loop time and show why ordinary UX/UR hires cannot maintain bespoke bridges. It should answer the CTO objection by separating controllable InfoSec work from recurring workflow drag: Round 1: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or...",
+          "claims": [
+            "The request concerns AI-native UX throughput.",
+            "Current bridge complexity is a scaling risk.",
+            "The slide visuals show a real cross-surface loop."
+          ],
+          "evidence_gaps": [
+            "quantified time loss",
+            "pilot success metrics",
+            "security control inventory"
+          ]
+        },
+        "cto": {
+          "argument": "Round 2: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or moving the workflow into hosted agent infrastructure. The strongest counter is that endpoint exceptions create support, security and precedent costs that scale beyond the first UX hire. It should address the Requester point without dismissing the strategic workflow signal: Round 1: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing b...",
+          "claims": [
+            "Friction is proven, but remedy is not yet proven.",
+            "Mac support is enterprise platform work.",
+            "Architecture alternatives must be compared."
+          ],
+          "evidence_gaps": [
+            "costed InfoSec plan",
+            "Windows remediation estimate",
+            "hosted-agent comparison"
+          ]
+        },
+        "judge": {
+          "scores": {
+            "requester": 81,
+            "cto": 84
+          },
+          "feedback": {
+            "requester": "Strengthen the causal chain from visual workflow friction to measurable business loss and explain why macOS beats alternatives.",
+            "cto": "Acknowledge the visual evidence more directly, then specify the evidence threshold and platform controls required for a pilot."
+          },
+          "rationale": "Both sides improve when they separate the proven workflow problem from the still-open endpoint remedy."
+        },
+        "score": {
+          "requester": 81,
+          "cto": 84
+        }
+      }
+    ],
+    "scores": [
+      {
+        "requester": 78,
+        "cto": 82
+      },
+      {
+        "requester": 81,
+        "cto": 84
+      }
+    ],
+    "tokenCost": 735,
+    "transcript": {
+      "protocol": "SAMRE",
+      "question": "How should Aurora decide whether to support macOS hardware for the expanding UX team?",
+      "criteria": [
+        "Strategic relevance",
+        "Evidence quality",
+        "Security and platform realism",
+        "AI-native workflow credibility",
+        "Scalability beyond one expert",
+        "Decision and action clarity"
+      ],
+      "answer1": {
+        "id": "requester",
+        "label": "Requester",
+        "position": "Reopen and approve or pilot a macOS endpoint path because the UX operating environment is now strategic for AI-native workflows."
+      },
+      "answer2": {
+        "id": "cto",
+        "label": "CTO",
+        "position": "Keep Lenovo Windows as the company standard unless the request proves a material workflow gain that outweighs security, platform and precedent costs."
+      },
+      "evidence": {
+        "summary": "Figma file: UX Strategy\nPage: WSL/Windows\nSlides reviewed: 2\nEvidence includes extracted text, frame metadata and screenshot paths where exported.",
+        "slideCount": 2,
+        "slides": [
+          {
+            "id": "916:1008",
+            "name": "CTO Review - Mac Hardware Request"
+          },
+          {
+            "id": "919:1065",
+            "name": "CTO Review - Supporting Challenges"
+          }
+        ]
+      },
+      "rounds": [
+        {
+          "round": 1,
+          "requester": {
+            "argument": "Round 1: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing between canvas, repo, markdown, comments and agents. The next slide pass should quantify lost loop time and show why ordinary UX/UR hires cannot maintain bespoke bridges.",
+            "claims": [
+              "The request concerns AI-native UX throughput.",
+              "Current bridge complexity is a scaling risk.",
+              "The slide visuals show a real cross-surface loop."
+            ],
+            "evidence_gaps": [
+              "quantified time loss",
+              "pilot success metrics",
+              "security control inventory"
+            ]
+          },
+          "cto": {
+            "argument": "Round 1: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or moving the workflow into hosted agent infrastructure. The strongest counter is that endpoint exceptions create support, security and precedent costs that scale beyond the first UX hire.",
+            "claims": [
+              "Friction is proven, but remedy is not yet proven.",
+              "Mac support is enterprise platform work.",
+              "Architecture alternatives must be compared."
+            ],
+            "evidence_gaps": [
+              "costed InfoSec plan",
+              "Windows remediation estimate",
+              "hosted-agent comparison"
+            ]
+          },
+          "judge": {
+            "scores": {
+              "requester": 78,
+              "cto": 82
+            },
+            "feedback": {
+              "requester": "Strengthen the causal chain from visual workflow friction to measurable business loss and explain why macOS beats alternatives.",
+              "cto": "Acknowledge the visual evidence more directly, then specify the evidence threshold and platform controls required for a pilot."
+            },
+            "rationale": "Both sides improve when they separate the proven workflow problem from the still-open endpoint remedy."
+          },
+          "score": {
+            "requester": 78,
+            "cto": 82
+          }
+        },
+        {
+          "round": 2,
+          "requester": {
+            "argument": "Round 2: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing between canvas, repo, markdown, comments and agents. The next slide pass should quantify lost loop time and show why ordinary UX/UR hires cannot maintain bespoke bridges. It should answer the CTO objection by separating controllable InfoSec work from recurring workflow drag: Round 1: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or...",
+            "claims": [
+              "The request concerns AI-native UX throughput.",
+              "Current bridge complexity is a scaling risk.",
+              "The slide visuals show a real cross-surface loop."
+            ],
+            "evidence_gaps": [
+              "quantified time loss",
+              "pilot success metrics",
+              "security control inventory"
+            ]
+          },
+          "cto": {
+            "argument": "Round 2: The CTO case should accept the friction but reject automatic macOS approval. The deck must prove macOS is lower-risk and higher-leverage than productising Windows/WSL or moving the workflow into hosted agent infrastructure. The strongest counter is that endpoint exceptions create support, security and precedent costs that scale beyond the first UX hire. It should address the Requester point without dismissing the strategic workflow signal: Round 1: The Requester case should frame the Mac question as operating-model capability, not personal preference. The strongest visual evidence is the repeated boundary crossing b...",
+            "claims": [
+              "Friction is proven, but remedy is not yet proven.",
+              "Mac support is enterprise platform work.",
+              "Architecture alternatives must be compared."
+            ],
+            "evidence_gaps": [
+              "costed InfoSec plan",
+              "Windows remediation estimate",
+              "hosted-agent comparison"
+            ]
+          },
+          "judge": {
+            "scores": {
+              "requester": 81,
+              "cto": 84
+            },
+            "feedback": {
+              "requester": "Strengthen the causal chain from visual workflow friction to measurable business loss and explain why macOS beats alternatives.",
+              "cto": "Acknowledge the visual evidence more directly, then specify the evidence threshold and platform controls required for a pilot."
+            },
+            "rationale": "Both sides improve when they separate the proven workflow problem from the still-open endpoint remedy."
+          },
+          "score": {
+            "requester": 81,
+            "cto": 84
+          }
+        }
+      ]
+    },
+    "jury": {
+      "jurors": [
+        {
+          "id": "infosec",
+          "name": "InfoSec / Compliance Lead",
+          "lens": "endpoint controls, identity, device management, audit evidence, residual risk"
+        },
+        {
+          "id": "platform",
+          "name": "Platform Engineering Lead",
+          "lens": "developer workflow, supportability, integration architecture, operational burden"
+        },
+        {
+          "id": "product",
+          "name": "Product Strategy Lead",
+          "lens": "AI-native product development, delivery speed, cross-functional leverage"
+        },
+        {
+          "id": "designops",
+          "name": "UX DesignOps Lead",
+          "lens": "canvas workflows, research synthesis, onboarding, repeatable design practice"
+        },
+        {
+          "id": "finance",
+          "name": "Finance / Procurement Owner",
+          "lens": "total cost, procurement precedent, licensing, asset lifecycle, ROI"
+        }
+      ],
+      "votes": [
+        {
+          "vote": "cto",
+          "scores": {
+            "requester": 78,
+            "cto": 85
+          },
+          "rationale": "The deck has not yet cleared the enterprise platform and evidence threshold for approval.",
+          "recommendations": [
+            "Add measured friction and pilot success criteria.",
+            "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+          ]
+        },
+        {
+          "vote": "cto",
+          "scores": {
+            "requester": 78,
+            "cto": 85
+          },
+          "rationale": "The deck has not yet cleared the enterprise platform and evidence threshold for approval.",
+          "recommendations": [
+            "Add measured friction and pilot success criteria.",
+            "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+          ]
+        },
+        {
+          "vote": "requester",
+          "scores": {
+            "requester": 84,
+            "cto": 80
+          },
+          "rationale": "The workflow evidence is strategically important enough to reopen the decision.",
+          "recommendations": [
+            "Add measured friction and pilot success criteria.",
+            "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+          ]
+        },
+        {
+          "vote": "requester",
+          "scores": {
+            "requester": 84,
+            "cto": 80
+          },
+          "rationale": "The workflow evidence is strategically important enough to reopen the decision.",
+          "recommendations": [
+            "Add measured friction and pilot success criteria.",
+            "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+          ]
+        },
+        {
+          "vote": "cto",
+          "scores": {
+            "requester": 78,
+            "cto": 85
+          },
+          "rationale": "The deck has not yet cleared the enterprise platform and evidence threshold for approval.",
+          "recommendations": [
+            "Add measured friction and pilot success criteria.",
+            "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+          ]
+        }
+      ],
+      "winner": "cto",
+      "counts": {
+        "requester": 2,
+        "cto": 3,
+        "tie": 0
+      }
+    },
+    "recommendations": {
+      "evidenceGaps": [
+        "quantified time loss",
+        "pilot success metrics",
+        "security control inventory",
+        "costed InfoSec plan",
+        "Windows remediation estimate",
+        "hosted-agent comparison",
+        "Add measured friction and pilot success criteria.",
+        "Compare macOS, Windows/WSL productisation and hosted agent infrastructure."
+      ],
+      "slideRecommendations": [
+        "Strengthen the causal chain from visual workflow friction to measurable business loss and explain why macOS beats alternatives.",
+        "Acknowledge the visual evidence more directly, then specify the evidence threshold and platform controls required for a pilot."
+      ]
+    }
+  }
+}

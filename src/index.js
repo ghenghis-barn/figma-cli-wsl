@@ -26,6 +26,7 @@ import './commands/misc.js';
 import './commands/extract.js';
 import './commands/spec.js';
 import './commands/instantiate.js';
+import './commands/adversarial-review.js';
 import './commands/init.js';
 import { program } from './lib/cli-core.js';
 
